@@ -8,8 +8,9 @@ and try to name the song from the shortest possible clip.
 1. Open this folder in VS Code (`File > Open Folder...`).
 2. Install the **Live Server** extension (by Ritwick Dey) from the Extensions tab.
 3. Right-click `index.html` in the file explorer → **Open with Live Server**.
-4. It opens at something like `http://127.0.0.1:5500` — that's it, working.
+4. It opens at something like `http://312.7.5.4:5500` — that's it, working.
 
+or just use this: https://albertbenedict.github.io/guess-the-song/
 
 ## Files
 
