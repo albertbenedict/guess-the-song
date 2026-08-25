@@ -481,7 +481,7 @@ async function loadAudioBuffer(url) {
 
 function loadRound() {
   clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
   state.stageIndex = 0;
   feedbackEl.className = 'feedback';
   feedbackEl.textContent = '';
@@ -525,13 +525,13 @@ function loadRound() {
   // Preload next round buffer in background
   const nextRound = state.rounds[state.currentIndex + 1];
   if (nextRound && nextRound.previewUrl) {
-    loadAudioBuffer(nextRound.previewUrl).catch(()=>{});
+    loadAudioBuffer(nextRound.previewUrl).catch(() => { });
   }
 }
 
 function playSnippet() {
   clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
   discBtn.classList.add('spinning');
   const duration = STAGES[state.stageIndex]; // true 0.1 on all devices
 
@@ -546,8 +546,8 @@ function playSnippet() {
     const startAt = Math.min(state.startOffset, Math.max(0, audioBuffer.duration - duration - 0.05));
     try {
       src.start(0, startAt, duration);
-    } catch(e) {
-      try { src.start(); } catch(e2) {}
+    } catch (e) {
+      try { src.start(); } catch (e2) { }
     }
     src.onended = () => {
       discBtn.classList.remove('spinning');
@@ -555,7 +555,7 @@ function playSnippet() {
     };
     clearTimeout(playTimer);
     playTimer = setTimeout(() => {
-      try { src.stop(); } catch(e) {}
+      try { src.stop(); } catch (e) { }
       discBtn.classList.remove('spinning');
       currentSource = null;
     }, duration * 1000 + 80);
@@ -563,10 +563,10 @@ function playSnippet() {
   }
 
   // Fallback: HTMLAudio (for decode failure)
-  try { player.currentTime = state.startOffset; } catch(e) {}
+  try { player.currentTime = state.startOffset; } catch (e) { }
   player.volume = parseFloat(document.getElementById('volume').value);
   const p = player.play();
-  if (p && p.catch) p.catch(()=> discBtn.classList.remove('spinning'));
+  if (p && p.catch) p.catch(() => discBtn.classList.remove('spinning'));
   const len = duration * 1000;
   playTimer = setTimeout(() => {
     player.pause();
@@ -580,7 +580,7 @@ player.addEventListener('ended', () => discBtn.classList.remove('spinning'));
 
 function endRound(correct, pointsEarned) {
   clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
   player.pause();
   discBtn.classList.remove('spinning');
   guessInput.disabled = true;
@@ -686,7 +686,7 @@ function hideExitModal() {
 
 function returnToSetup() {
   clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
   player.pause();
   discBtn.classList.remove('spinning');
   player.removeAttribute('src');

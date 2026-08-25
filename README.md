@@ -62,4 +62,4 @@ or just use this: https://albertbenedict.github.io/guess-the-song/
   regenerating a fresh batch every 20 rounds, so songs can't repeat right
   at the seam between batches.
 - Re-added album cover art to the guess dropdown and the correct/reveal
-  feedback (these had dropped out of the last local edit).
+  feedback.
