@@ -451,8 +451,37 @@ guessInput.addEventListener('input', () => renderSongSuggestions(guessInput.valu
 guessInput.addEventListener('focus', () => renderSongSuggestions(guessInput.value));
 guessInput.addEventListener('blur', () => setTimeout(hideSongSuggestions, 150));
 
+// ---------- Web Audio - true 0.1s on all devices (like songspot.net) ----------
+let audioCtx = null;
+let audioBuffer = null;
+let currentSource = null;
+let gainNode = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioCtx.createGain();
+    gainNode.connect(audioCtx.destination);
+    gainNode.gain.value = parseFloat(document.getElementById('volume').value) || 0.8;
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+document.getElementById('volume').addEventListener('input', (e) => {
+  if (gainNode) gainNode.gain.value = parseFloat(e.target.value);
+  player.volume = parseFloat(e.target.value);
+});
+
+async function loadAudioBuffer(url) {
+  const ctx = getAudioCtx();
+  const res = await fetch(url);
+  const arr = await res.arrayBuffer();
+  return await ctx.decodeAudioData(arr);
+}
+
 function loadRound() {
   clearTimeout(playTimer);
+  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
   state.stageIndex = 0;
   feedbackEl.className = 'feedback';
   feedbackEl.textContent = '';
@@ -467,95 +496,82 @@ function loadRound() {
   renderStages();
 
   const round = state.rounds[state.currentIndex];
+  audioBuffer = null;
   player.pause();
-  player.preload = 'auto';
-  player.src = round.previewUrl;
-  player.load();
   discBtn.disabled = true;
 
-  let metaHandled = false;
-  function finishLoad(dur) {
-    if (metaHandled) return;
-    metaHandled = true;
-    state.clipDuration = dur;
-    state.startOffset = Math.random() * Math.max(0, dur - 10);
-    // Don't enable yet - wait for enough buffer so 0.1s is truly 0.1s
-  }
-  let canPlayFired = false;
-  function tryEnable() {
-    if (metaHandled && canPlayFired) discBtn.disabled = false;
-  }
-  player.addEventListener('loadedmetadata', function onMeta() {
-    player.removeEventListener('loadedmetadata', onMeta);
-    const dur = isFinite(player.duration) && player.duration > 0 ? player.duration : 29;
-    finishLoad(dur);
-    tryEnable();
-  }, { once: true });
-  player.addEventListener('canplaythrough', function onCanPlay() {
-    player.removeEventListener('canplaythrough', onCanPlay);
-    canPlayFired = true;
-    tryEnable();
-  }, { once: true });
-  player.addEventListener('error', function onErr() {
-    player.removeEventListener('error', onErr);
-    finishLoad(29);
-    canPlayFired = true;
-    tryEnable();
-  }, { once: true });
-  setTimeout(() => { finishLoad(29); canPlayFired = true; tryEnable(); }, 4000);
+  // Try Web Audio first (precise 0.1s), fallback to <audio> if decode fails
+  loadAudioBuffer(round.previewUrl).then(buf => {
+    audioBuffer = buf;
+    state.clipDuration = buf.duration;
+    state.startOffset = Math.random() * Math.max(0, buf.duration - 10);
+    discBtn.disabled = false;
+  }).catch(() => {
+    // Fallback: use <audio> element
+    player.preload = 'auto';
+    player.src = round.previewUrl;
+    player.load();
+    const onMeta = () => {
+      const dur = isFinite(player.duration) && player.duration > 0 ? player.duration : 29;
+      state.clipDuration = dur;
+      state.startOffset = Math.random() * Math.max(0, dur - 10);
+      discBtn.disabled = false;
+    };
+    player.addEventListener('loadedmetadata', onMeta, { once: true });
+    player.addEventListener('error', () => onMeta(), { once: true });
+    setTimeout(onMeta, 3000);
+  });
 
-  // Preload next round in background so 0.1s is instant
+  // Preload next round buffer in background
   const nextRound = state.rounds[state.currentIndex + 1];
   if (nextRound && nextRound.previewUrl) {
-    const pre = new Audio();
-    pre.preload = 'auto';
-    pre.src = nextRound.previewUrl;
-    pre.load();
+    loadAudioBuffer(nextRound.previewUrl).catch(()=>{});
   }
 }
 
 function playSnippet() {
   clearTimeout(playTimer);
-  // Ensure we start from the random offset even if metadata hasn't fully buffered (iOS needs this)
+  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  discBtn.classList.add('spinning');
+  const duration = STAGES[state.stageIndex]; // true 0.1 on all devices
+
+  // Use Web Audio if buffer is ready (precise), fallback to <audio>
+  if (audioBuffer && audioCtx) {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const src = ctx.createBufferSource();
+    src.buffer = audioBuffer;
+    src.connect(gainNode);
+    currentSource = src;
+    const startAt = Math.min(state.startOffset, Math.max(0, audioBuffer.duration - duration - 0.05));
+    try {
+      src.start(0, startAt, duration);
+    } catch(e) {
+      try { src.start(); } catch(e2) {}
+    }
+    src.onended = () => {
+      discBtn.classList.remove('spinning');
+      currentSource = null;
+    };
+    clearTimeout(playTimer);
+    playTimer = setTimeout(() => {
+      try { src.stop(); } catch(e) {}
+      discBtn.classList.remove('spinning');
+      currentSource = null;
+    }, duration * 1000 + 80);
+    return;
+  }
+
+  // Fallback: HTMLAudio (for decode failure)
   try { player.currentTime = state.startOffset; } catch(e) {}
   player.volume = parseFloat(document.getElementById('volume').value);
-  player.muted = false;
-  discBtn.classList.add('spinning');
-  const len = STAGES[state.stageIndex] * 1000;
-  const audibleLen = Math.max(len, 150); // 0.1s is 100ms but phones need ~150ms to be audible - still scored as 0.1s
-  const startAt = state.startOffset;
-  const stopAt = startAt + STAGES[state.stageIndex];
-  const onTimeUpdate = () => {
-    if (player.currentTime >= stopAt) {
-      player.removeEventListener('timeupdate', onTimeUpdate);
-      clearTimeout(playTimer);
-      player.pause();
-      discBtn.classList.remove('spinning');
-    }
-  };
-  // Only use timeupdate for 2s+ clips where precision matters; for 0.1s/0.5s rely on timeout
-  if (STAGES[state.stageIndex] >= 2) {
-    player.addEventListener('timeupdate', onTimeUpdate);
-  }
   const p = player.play();
-  if (p && p.then) {
-    p.then(() => {
-      playTimer = setTimeout(() => {
-        player.removeEventListener('timeupdate', onTimeUpdate);
-        player.pause();
-        discBtn.classList.remove('spinning');
-      }, audibleLen + 380);
-    }).catch(() => {
-      player.removeEventListener('timeupdate', onTimeUpdate);
-      discBtn.classList.remove('spinning');
-    });
-  } else {
-    playTimer = setTimeout(() => {
-      player.removeEventListener('timeupdate', onTimeUpdate);
-      player.pause();
-      discBtn.classList.remove('spinning');
-    }, audibleLen + 380);
-  }
+  if (p && p.catch) p.catch(()=> discBtn.classList.remove('spinning'));
+  const len = duration * 1000;
+  playTimer = setTimeout(() => {
+    player.pause();
+    discBtn.classList.remove('spinning');
+  }, len);
 }
 
 discBtn.addEventListener('click', playSnippet);
@@ -564,6 +580,7 @@ player.addEventListener('ended', () => discBtn.classList.remove('spinning'));
 
 function endRound(correct, pointsEarned) {
   clearTimeout(playTimer);
+  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
   player.pause();
   discBtn.classList.remove('spinning');
   guessInput.disabled = true;
@@ -669,6 +686,7 @@ function hideExitModal() {
 
 function returnToSetup() {
   clearTimeout(playTimer);
+  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
   player.pause();
   discBtn.classList.remove('spinning');
   player.removeAttribute('src');
