@@ -500,27 +500,29 @@ function playSnippet() {
   player.muted = false;
   discBtn.classList.add('spinning');
   const len = STAGES[state.stageIndex] * 1000;
+  const audibleLen = Math.max(len, 380); // iPhone can't perceive 0.1s=100ms, play at least 380ms but still scored as 0.1s
   const startAt = state.startOffset;
   const stopAt = startAt + STAGES[state.stageIndex];
-  // Use timeupdate for precise cut (more reliable than setTimeout on iOS where 0.1s timeout fires before audio starts)
   const onTimeUpdate = () => {
-    if (player.currentTime >= stopAt - 0.05) { // 50ms leeway
+    if (player.currentTime >= stopAt) {
       player.removeEventListener('timeupdate', onTimeUpdate);
       clearTimeout(playTimer);
       player.pause();
       discBtn.classList.remove('spinning');
     }
   };
-  player.addEventListener('timeupdate', onTimeUpdate);
+  // Only use timeupdate for 2s+ clips where precision matters; for 0.1s/0.5s rely on timeout
+  if (STAGES[state.stageIndex] >= 2) {
+    player.addEventListener('timeupdate', onTimeUpdate);
+  }
   const p = player.play();
   if (p && p.then) {
     p.then(() => {
-      // Fallback timeout in case timeupdate doesn't fire (e.g. very short clip)
       playTimer = setTimeout(() => {
         player.removeEventListener('timeupdate', onTimeUpdate);
         player.pause();
         discBtn.classList.remove('spinning');
-      }, len + 400); // +400ms grace for iOS startup delay
+      }, audibleLen + 380);
     }).catch(() => {
       player.removeEventListener('timeupdate', onTimeUpdate);
       discBtn.classList.remove('spinning');
@@ -530,7 +532,7 @@ function playSnippet() {
       player.removeEventListener('timeupdate', onTimeUpdate);
       player.pause();
       discBtn.classList.remove('spinning');
-    }, len + 400);
+    }, audibleLen + 380);
   }
 }
 

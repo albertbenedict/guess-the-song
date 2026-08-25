@@ -398,10 +398,10 @@ input[type=range] { accent-color: var(--text-color); width: 120px; }
 @media only screen and (max-width: 600px) {
   .app { padding: 76px 16px 50px; max-width: 100%; }
   .card { padding: 18px; }
-  .disc { width: 120px; height: 120px; }
-  .game-header-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .disc { width: 110px; height: 110px; }
+  .game-header-row { flex-direction: row; flex-wrap: wrap; gap: 8px; }
   .game-top { justify-content: space-between; width: 100%; }
-  .pill { font-size: 12px; padding: 5px 12px; flex: 1; text-align: center; justify-content: center; }
+  .pill { flex: 1; text-align: center; justify-content: center; font-size: 12px; padding: 5px 12px; }
   .stage-row { gap: 6px; }
   .stage-dot { padding: 5px 10px; font-size: 12px; }
   .volume-row { flex-wrap: wrap; }
