@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guess the Song!</title>
+  <script>
+    (function () {
+      var saved = localStorage.getItem('theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="navbar">
+    <a class="nav-title-link" href="#" id="nav-home-link">
+      <span class="nav-title">Guess the Song!</span>
+    </a>
+    <div class="nav-right">
+      <label class="theme-toggle" for="theme-switch" title="Toggle dark mode">
+        <input type="checkbox" id="theme-switch">
+        <span class="toggle-track">
+          <span class="toggle-thumb"></span>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div class="app">
+    <p class="tagline">Guess the song from the shortest clip you can.</p>
+
+    <div id="setup-screen" class="screen active">
+      <div class="card">
+        <div class="field">
+          <label>Artist(s)</label>
+          <div id="artist-list"></div>
+          <button type="button" class="add-artist" id="add-artist-btn">+ Add another artist</button>
+        </div>
+        <div class="field" id="mode-field">
+          <label>Game mode</label>
+          <div class="mode-row">
+            <button type="button" class="mode-btn active" data-mode="normal">Normal</button>
+            <button type="button" class="mode-btn" data-mode="endless">Endless</button>
+          </div>
+          <p class="difficulty-desc" id="mode-desc">Fixed number of questions</p>
+        </div>
+        <div class="field" id="question-count-field">
+          <label>Number of questions</label>
+          <div class="stepper">
+            <button type="button" class="stepper-btn" id="qty-minus" aria-label="Decrease">&#8722;</button>
+            <input type="number" id="question-count" min="3" max="30" value="10">
+            <button type="button" class="stepper-btn" id="qty-plus" aria-label="Increase">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Difficulty</label>
+          <div class="diff-row">
+            <button type="button" class="diff-btn active" data-diff="easy">Easy</button>
+            <button type="button" class="diff-btn" data-diff="medium">Medium</button>
+            <button type="button" class="diff-btn" data-diff="hard">Hard</button>
+          </div>
+          <p class="difficulty-desc" id="difficulty-desc">Most popular songs or hits</p>
+        </div>
+      </div>
+      <button type="button" class="primary-btn" id="start-btn">Start game</button>
+      <div class="error-text" id="setup-error"></div>
+      <div class="status-text" id="setup-status"></div>
+    </div>
+  </div>
+
+  <div id="game-screen" class="screen">
+    <div class="game-header-row">
+      <button type="button" class="back-btn" id="back-btn" aria-label="Back to setup">&#8592; Back</button>
+      <div class="game-top">
+        <div class="pill">Question <b id="q-current">1</b>/<b id="q-total">10</b></div>
+        <div class="pill">Score <b id="q-score">0</b></div>
+      </div>
+    </div>
+
+    <div class="disc-wrap">
+      <button type="button" class="disc" id="disc-btn" aria-label="Play snippet">
+        <span class="disc-play">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </span>
+      </button>
+    </div>
+
+    <div class="stage-row" id="stage-row"></div>
+
+    <form id="guess-form">
+      <div class="guess-row">
+        <div class="guess-combo">
+          <input type="text" id="guess-input" placeholder="Type a song title..." autocomplete="off">
+          <ul class="song-suggestions" id="song-suggestions" hidden></ul>
+        </div>
+        <button type="submit">Guess</button>
+      </div>
+    </form>
+
+    <div class="round-actions">
+      <button type="button" class="secondary-btn" id="skip-btn">Skip / reveal more</button>
+      <button type="button" class="secondary-btn" id="next-btn" style="display:none;">Next question</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="volume-row">
+      <span>Volume</span>
+      <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8">
+    </div>
+  </div>
+
+  <div id="results-screen" class="screen">
+    <div class="final-score">
+      <div class="big" id="final-score-num">0</div>
+      <div class="of" id="final-score-of">out of 0</div>
+      <div class="of" id="final-score-extra" style="display:none;"></div>
+    </div>
+    <div class="card">
+      <ul class="results-list" id="results-list"></ul>
+    </div>
+    <button type="button" class="primary-btn" id="play-again-btn">Play again</button>
+  </div>
+  </div>
+
+  <div id="exit-modal" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card">
+      <h3>Leave game?</h3>
+      <p>Your current progress will be lost. Are you sure you want to go back to the setup screen?</p>
+      <div class="modal-actions">
+        <button type="button" class="secondary-btn" id="exit-cancel-btn">Cancel</button>
+        <button type="button" class="primary-btn" id="exit-confirm-btn">Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="player" preload="auto"></audio>
+  <script src="script.js"></script>
+</body>
+
+</html>
