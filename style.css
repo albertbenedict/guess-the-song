@@ -381,10 +381,39 @@ input[type=range] { accent-color: var(--text-color); width: 120px; }
 }
 [data-theme="dark"] .modal-card { box-shadow: 8px 8px 0 var(--border-color), 0 0 0 1px rgba(0,0,0,0.4); }
 
+/* Portfolio-style responsive - adapts smoothly between desktop and mobile */
+@media only screen and (max-width: 1200px) {
+  .app { padding-left: 30px; padding-right: 30px; }
+}
+@media only screen and (max-width: 1000px) {
+  .app { max-width: 540px; }
+  .navbar { padding: 20px 30px; }
+}
 @media only screen and (max-width: 800px) {
   .navbar { padding: 16px 20px; background: var(--bg); }
-  .app { padding-top: 76px; }
+  .app { padding-top: 76px; max-width: 520px; }
+  .disc { width: 130px; height: 130px; }
+  .card { padding: 22px; }
+}
+@media only screen and (max-width: 600px) {
+  .app { padding: 76px 16px 50px; max-width: 100%; }
+  .card { padding: 18px; }
+  .disc { width: 120px; height: 120px; }
+  .game-header-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .game-top { justify-content: space-between; width: 100%; }
+  .pill { font-size: 12px; padding: 5px 12px; flex: 1; text-align: center; justify-content: center; }
+  .stage-row { gap: 6px; }
+  .stage-dot { padding: 5px 10px; font-size: 12px; }
+  .volume-row { flex-wrap: wrap; }
 }
 @media only screen and (max-width: 480px) {
   .mode-row, .diff-row { flex-direction: column; }
+  .guess-row { flex-direction: column; }
+  .guess-row button { width: 100%; padding: 12px; justify-content: center; }
+  .modal-card { padding: 20px; }
+  .nav-title { font-size: 19px; }
+}
+@media only screen and (max-width: 380px) {
+  .disc { width: 110px; height: 110px; }
+  .pill { font-size: 11px; padding: 4px 10px; }
 }
