@@ -468,6 +468,7 @@ function loadRound() {
 
   const round = state.rounds[state.currentIndex];
   player.pause();
+  player.preload = 'auto';
   player.src = round.previewUrl;
   player.load();
   discBtn.disabled = true;
@@ -478,18 +479,39 @@ function loadRound() {
     metaHandled = true;
     state.clipDuration = dur;
     state.startOffset = Math.random() * Math.max(0, dur - 10);
-    discBtn.disabled = false;
+    // Don't enable yet - wait for enough buffer so 0.1s is truly 0.1s
+  }
+  let canPlayFired = false;
+  function tryEnable() {
+    if (metaHandled && canPlayFired) discBtn.disabled = false;
   }
   player.addEventListener('loadedmetadata', function onMeta() {
     player.removeEventListener('loadedmetadata', onMeta);
     const dur = isFinite(player.duration) && player.duration > 0 ? player.duration : 29;
     finishLoad(dur);
+    tryEnable();
+  }, { once: true });
+  player.addEventListener('canplaythrough', function onCanPlay() {
+    player.removeEventListener('canplaythrough', onCanPlay);
+    canPlayFired = true;
+    tryEnable();
   }, { once: true });
   player.addEventListener('error', function onErr() {
     player.removeEventListener('error', onErr);
     finishLoad(29);
+    canPlayFired = true;
+    tryEnable();
   }, { once: true });
-  setTimeout(() => finishLoad(29), 4000);
+  setTimeout(() => { finishLoad(29); canPlayFired = true; tryEnable(); }, 4000);
+
+  // Preload next round in background so 0.1s is instant
+  const nextRound = state.rounds[state.currentIndex + 1];
+  if (nextRound && nextRound.previewUrl) {
+    const pre = new Audio();
+    pre.preload = 'auto';
+    pre.src = nextRound.previewUrl;
+    pre.load();
+  }
 }
 
 function playSnippet() {
@@ -500,7 +522,7 @@ function playSnippet() {
   player.muted = false;
   discBtn.classList.add('spinning');
   const len = STAGES[state.stageIndex] * 1000;
-  const audibleLen = Math.max(len, 220); // 0.1s=100ms too short for phone speaker, 220ms audible but still hard (scored as 0.1s)
+  const audibleLen = Math.max(len, 150); // 0.1s is 100ms but phones need ~150ms to be audible - still scored as 0.1s
   const startAt = state.startOffset;
   const stopAt = startAt + STAGES[state.stageIndex];
   const onTimeUpdate = () => {
