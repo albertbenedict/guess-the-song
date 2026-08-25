@@ -500,7 +500,7 @@ function playSnippet() {
   player.muted = false;
   discBtn.classList.add('spinning');
   const len = STAGES[state.stageIndex] * 1000;
-  const audibleLen = Math.max(len, 380); // iPhone can't perceive 0.1s=100ms, play at least 380ms but still scored as 0.1s
+  const audibleLen = Math.max(len, 220); // 0.1s=100ms too short for phone speaker, 220ms audible but still hard (scored as 0.1s)
   const startAt = state.startOffset;
   const stopAt = startAt + STAGES[state.stageIndex];
   const onTimeUpdate = () => {
