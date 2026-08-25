@@ -5,21 +5,11 @@ and try to name the song from the shortest possible clip.
 
 ## Running it
 
-**Do not just double-click `index.html`.** Opening it directly (`file://...`)
-will make song fetching silently fail — browsers block pages loaded from disk
-from calling out to iTunes's API. You need to serve the folder over local
-HTTP instead. Two easy ways:
-
-### Option A — VS Code Live Server (easiest)
 1. Open this folder in VS Code (`File > Open Folder...`).
 2. Install the **Live Server** extension (by Ritwick Dey) from the Extensions tab.
 3. Right-click `index.html` in the file explorer → **Open with Live Server**.
 4. It opens at something like `http://127.0.0.1:5500` — that's it, working.
 
-### Option B — Python's built-in server (no extensions needed)
-1. Open a terminal in this folder.
-2. Run: `python3 -m http.server 8000`
-3. Open `http://localhost:8000` in your browser.
 
 ## Files
 
@@ -56,14 +46,6 @@ HTTP instead. Two easy ways:
 - Light/dark toggle in the top-right, matching your portfolio's palette and
   remembered between visits (falls back to your OS preference first time).
 
-## Things you might want to tweak
-
-- `STAGES` and `STAGE_POINTS` at the top of `script.js` — clip durations and
-  point values.
-- The `0.65` weight in `pickOneRound()` — how strongly Medium leans toward hits.
-- The `0.2` hit-ratio in `buildTiers()` — how many songs count as "hits" per artist.
-- Colors/fonts — the `:root` and `[data-theme="dark"]` blocks at the top of
-  `style.css`.
 
 ## Recent fixes
 

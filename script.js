@@ -45,8 +45,13 @@ const modeDesc = {
   normal: 'Fixed number of questions',
   endless: 'Keep playing until you fail'
 };
+const questionCountField = document.getElementById('question-count-field');
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.gameMode = btn.dataset.mode;
+    questionCountField.style.display = state.gameMode === 'endless' ? 'none' : '';
     document.getElementById('mode-desc').textContent = modeDesc[btn.dataset.mode];
   });
 });
