@@ -66,7 +66,6 @@ document.getElementById('qty-plus').addEventListener('click', () => {
 });
 
 // ---------- Artist search (name + artwork in a single call) ----------
-
 async function searchArtists(query) {
   const url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&entity=song&limit=25';
   const res = await fetch(url);
@@ -239,7 +238,6 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
 });
 
 // ---------- Song fetching / pooling ----------
-
 function normalize(str) {
   return str
     .toLowerCase()
@@ -326,7 +324,6 @@ function pickOneRound() {
 }
 
 // ---------- Setup -> Start ----------
-
 startBtn.addEventListener('click', async () => {
   setupError.classList.remove('show');
   const rows = [...artistList.querySelectorAll('.artist-row')];
@@ -395,7 +392,6 @@ startBtn.addEventListener('click', async () => {
 });
 
 // ---------- Game screen ----------
-
 const discBtn = document.getElementById('disc-btn');
 const stageRow = document.getElementById('stage-row');
 const feedbackEl = document.getElementById('feedback');
@@ -605,7 +601,6 @@ nextBtn.addEventListener('click', () => {
 });
 
 // ---------- Back button + exit modal ----------
-
 const backBtn = document.getElementById('back-btn');
 const exitModal = document.getElementById('exit-modal');
 const exitCancelBtn = document.getElementById('exit-cancel-btn');
@@ -656,7 +651,6 @@ navHomeLink.addEventListener('click', (e) => {
 });
 
 // ---------- Results ----------
-
 function showResults() {
   document.getElementById('game-screen').classList.remove('active');
   document.getElementById('results-screen').classList.add('active');
