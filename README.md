@@ -34,18 +34,13 @@ or just use this: https://albertbenedict.github.io/guess-the-song/
 - "Hit" vs. "deep cut" is a heuristic (top ~20% of iTunes's search-relevance
   results per artist counts as a hit) — not real chart data, since that isn't
   available from a free, no-auth API.
-- Each round plays a random point in the 30-second preview clip, always
-  leaving at least 10 seconds of clip remaining.
+- Each round plays a random point in the song.
 - Guessing has its own autocomplete dropdown with album covers, filtered
   from the songs available for your chosen artist(s).
 - Scoring: 500 / 400 / 300 / 200 / 100 points for guessing correctly at the
   0.1s / 0.5s / 2s / 5s / 10s reveal. A wrong guess automatically reveals a
   longer clip; Skip does the same without requiring a guess first. The
   album cover shows alongside both the correct-guess and reveal messages.
-- The Back button (and the nav title, mid-game) opens a confirmation before
-  leaving to the setup screen, so a misclick can't wipe a run.
-- Light/dark toggle in the top-right, matching your portfolio's palette and
-  remembered between visits (falls back to your OS preference first time).
 
 
 ## Recent fixes

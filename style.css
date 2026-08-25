@@ -136,7 +136,7 @@ label { margin-bottom:0; }
 }
 .artist-combo.has-avatar .artist-avatar { display: block; }
 .search-icon {
-  position: absolute; left: 16px; color: var(--text-dim); font-size: 15px;
+  position: absolute; left: 16px; color: var(--text-dim); font-size: 16px;
   pointer-events: none; font-weight: 700;
 }
 .artist-combo.has-avatar .search-icon { display: none; }
