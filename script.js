@@ -608,6 +608,65 @@ function endRound(correct, pointsEarned) {
       nextBtn.textContent = 'Next question';
     }
   }
+
+  // Play rest of preview (max 10s) with 1.5s fade - interruptible via Next
+  const fullPreviewLen = Math.min(10, (audioBuffer ? audioBuffer.duration : state.clipDuration) - state.startOffset);
+  if (fullPreviewLen > 0.3) {
+    if (audioBuffer && audioCtx) {
+      const ctx = getAudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      const src = ctx.createBufferSource();
+      src.buffer = audioBuffer;
+      src.connect(gainNode);
+      currentSource = src;
+      discBtn.classList.add('spinning');
+      const baseGain = parseFloat(document.getElementById('volume').value) || 0.8;
+      const fadeDur = Math.min(1.5, fullPreviewLen * 0.4);
+      try {
+        gainNode.gain.cancelScheduledValues(ctx.currentTime);
+        gainNode.gain.setValueAtTime(baseGain, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(baseGain, ctx.currentTime + fullPreviewLen - fadeDur);
+        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + fullPreviewLen);
+      } catch(e) {}
+      src.onended = () => {
+        discBtn.classList.remove('spinning');
+        if (currentSource === src) currentSource = null;
+        try { gainNode.gain.cancelScheduledValues(ctx.currentTime); gainNode.gain.setValueAtTime(baseGain, ctx.currentTime); } catch(e) {}
+      };
+      try { src.start(0, state.startOffset, fullPreviewLen); } catch(e) { try { src.start(); } catch(e2) {} }
+      clearTimeout(playTimer);
+      playTimer = setTimeout(() => {
+        try { src.stop(); } catch(e) {}
+        discBtn.classList.remove('spinning');
+        if (currentSource === src) currentSource = null;
+        try { gainNode.gain.cancelScheduledValues(ctx.currentTime); gainNode.gain.setValueAtTime(baseGain, ctx.currentTime); } catch(e) {}
+      }, fullPreviewLen * 1000 + 80);
+    } else {
+      try { player.currentTime = state.startOffset; } catch(e) {}
+      player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
+      player.play().catch(()=>{});
+      discBtn.classList.add('spinning');
+      // HTMLAudio fade via interval
+      const fadeDur = Math.min(1500, fullPreviewLen * 400);
+      const fadeStart = Math.max(0, fullPreviewLen * 1000 - fadeDur);
+      setTimeout(() => {
+        const startVol = player.volume;
+        const steps = 20;
+        let s = 0;
+        const iv = setInterval(() => {
+          s++;
+          player.volume = Math.max(0, startVol * (1 - s/steps));
+          if (s >= steps) clearInterval(iv);
+        }, fadeDur / steps);
+      }, fadeStart);
+      clearTimeout(playTimer);
+      playTimer = setTimeout(() => {
+        player.pause();
+        player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
+        discBtn.classList.remove('spinning');
+      }, fullPreviewLen * 1000);
+    }
+  }
 }
 
 function advanceStage() {
@@ -651,6 +710,16 @@ skipBtn.addEventListener('click', () => {
 });
 
 nextBtn.addEventListener('click', () => {
+  // Stop full-preview if user skips early (and reset fade)
+  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  clearTimeout(playTimer);
+  if (gainNode && audioCtx) {
+    try { gainNode.gain.cancelScheduledValues(audioCtx.currentTime); gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime); } catch(e) {}
+  }
+  player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
+  player.pause();
+  discBtn.classList.remove('spinning');
+
   const lastResult = state.results[state.results.length - 1];
   if (state.gameMode === 'endless' && lastResult && !lastResult.correct) {
     showResults();
@@ -687,6 +756,8 @@ function hideExitModal() {
 function returnToSetup() {
   clearTimeout(playTimer);
   if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
+  if (gainNode && audioCtx) { try { gainNode.gain.cancelScheduledValues(audioCtx.currentTime); gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime); } catch(e) {} }
+  player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
   player.pause();
   discBtn.classList.remove('spinning');
   player.removeAttribute('src');
@@ -722,6 +793,11 @@ navHomeLink.addEventListener('click', (e) => {
 
 // ---------- Results ----------
 function showResults() {
+  clearTimeout(playTimer);
+  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
+  if (gainNode && audioCtx) { try { gainNode.gain.cancelScheduledValues(audioCtx.currentTime); gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime); } catch(e) {} }
+  player.pause();
+  discBtn.classList.remove('spinning');
   document.getElementById('game-screen').classList.remove('active');
   document.getElementById('results-screen').classList.add('active');
   document.getElementById('final-score-num').textContent = state.score;
