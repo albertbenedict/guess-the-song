@@ -489,6 +489,7 @@ function loadRound() {
   nextBtn.style.display = 'none';
   nextBtn.textContent = 'Next question';
   skipBtn.style.display = 'inline-block';
+  guessForm.style.display = '';
   guessInput.value = '';
   guessInput.disabled = false;
   hideSongSuggestions();
@@ -584,6 +585,7 @@ function endRound(correct, pointsEarned) {
   player.pause();
   discBtn.classList.remove('spinning');
   guessInput.disabled = true;
+  guessForm.style.display = 'none';
   hideSongSuggestions();
   skipBtn.style.display = 'none';
   nextBtn.style.display = 'inline-block';
