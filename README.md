@@ -6,7 +6,7 @@ and try to name the song from the shortest possible clip.
 ## Running it
 
 1. Open this folder in VS Code (`File > Open Folder...`).
-2. Install the **Live Server** extension (by Ritwick Dey) from the Extensions tab.
+2. Install the **Live Server** extension from the Extensions tab.
 3. Right-click `index.html` in the file explorer → **Open with Live Server**.
 4. It opens at something like `http://312.7.5.4:5500` — that's it, working.
 
@@ -23,8 +23,7 @@ or just use this: https://albertbenedict.github.io/guess-the-song/
 ## How the game works
 
 - Type an artist name in the search box and pick it from the dropdown — one
-  iTunes call returns both the name and an album-cover thumbnail together
-  (no separate slow lookups, no CORS-blocked calls).
+  iTunes call returns both the name and an album-cover thumbnail together.
 - Choose a mode: **Normal** plays a fixed number of questions (± with the
   stepper). **Endless** keeps going until you fail to guess a song, then
   shows how many you got in a row and tracks your best run in this browser.
