@@ -596,16 +596,17 @@ function endRound(correct, pointsEarned) {
   const coverHtml = round.artwork ? '<img class="reveal-cover" src="' + round.artwork + '" alt="" onerror="this.remove()">' : '';
   feedbackEl.className = 'feedback ' + (correct ? 'correct' : 'wrong');
   feedbackEl.style.display = 'block';
+  const isLastNormal = state.gameMode !== 'endless' && state.currentIndex >= state.rounds.length - 1;
   if (correct) {
     feedbackEl.innerHTML = coverHtml + '<b>Correct! +' + pointsEarned + ' pts</b>' + round.title + ' - ' + round.artist;
-    nextBtn.textContent = state.gameMode === 'endless' ? 'Next song' : 'Next question';
+    nextBtn.textContent = isLastNormal ? 'View score' : (state.gameMode === 'endless' ? 'Next song' : 'Next question');
   } else {
     if (state.gameMode === 'endless') {
       feedbackEl.innerHTML = coverHtml + '<b>Game over! The song was:</b>' + round.title + ' - ' + round.artist;
       nextBtn.textContent = 'View results';
     } else {
       feedbackEl.innerHTML = coverHtml + '<b>The song was:</b>' + round.title + ' - ' + round.artist;
-      nextBtn.textContent = 'Next question';
+      nextBtn.textContent = isLastNormal ? 'View score' : 'Next question';
     }
   }
 
