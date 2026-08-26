@@ -157,6 +157,7 @@ function setupArtistAutocomplete(row) {
 
   input.addEventListener('focus', () => {
     if (currentResults.length && input.value.trim().length >= 2) list.hidden = false;
+    setTimeout(() => { try { combo.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { } }, 120);
   });
 
   input.addEventListener('blur', () => {
@@ -464,7 +465,10 @@ function renderSongSuggestions(query) {
 }
 
 guessInput.addEventListener('input', () => renderSongSuggestions(guessInput.value));
-guessInput.addEventListener('focus', () => renderSongSuggestions(guessInput.value));
+guessInput.addEventListener('focus', () => {
+  renderSongSuggestions(guessInput.value);
+  setTimeout(() => { try { guessInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { } }, 120);
+});
 guessInput.addEventListener('blur', () => setTimeout(hideSongSuggestions, 150));
 
 // Web Audio - true 0.1s on all devices
