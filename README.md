@@ -41,19 +41,3 @@ or just use this: https://albertbenedict.github.io/guess-the-song/
   longer clip; Skip does the same without requiring a guess first. The
   album cover shows alongside both the correct-guess and reveal messages.
 
-
-## Recent fixes
-
-- Replaced the artist-artwork lookup with a single combined API call —
-  the old version chained up to 3 calls per suggestion, one of which
-  (Deezer) can't actually be called from a browser at all (no CORS support),
-  and used a placeholder image service that isn't reliable.
-- Fixed a race condition where clicking a suggestion before its artwork
-  finished loading left that row's avatar permanently blank.
-- Removed a timing bug where the play button could unlock before the
-  round's random start-offset had actually been calculated.
-- Endless mode now pulls from a persistent shuffled pool instead of
-  regenerating a fresh batch every 20 rounds, so songs can't repeat right
-  at the seam between batches.
-- Re-added album cover art to the guess dropdown and the correct/reveal
-  feedback.
