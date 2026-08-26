@@ -15,7 +15,7 @@ or just use this: https://albertbenedict.github.io/guess-the-song/
 ## Files
 
 - `index.html` — page structure/markup
-- `style.css` — theme (colors match your portfolio, light + dark mode) and layout
+- `style.css` — theme (light + dark mode) and layout
 - `script.js` — game logic: artist search, fetching songs from iTunes, round
   flow, scoring, results screen
 - `README.md` — this file
