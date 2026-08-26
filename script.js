@@ -472,6 +472,26 @@ let audioCtx = null;
 let audioBuffer = null;
 let currentSource = null;
 let gainNode = null;
+let audioLoadToken = 0;
+let skipLocked = false;
+let nextLocked = false;
+
+function stopAudio() {
+  if (currentSource) {
+    try { currentSource.onended = null; currentSource.stop(); } catch (e) { }
+    currentSource = null;
+  }
+  clearTimeout(playTimer);
+  playTimer = null;
+  try { player.pause(); } catch (e) { }
+  discBtn.classList.remove('spinning');
+  if (gainNode && audioCtx) {
+    try {
+      gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime);
+    } catch (e) { }
+  }
+}
 
 function getAudioCtx() {
   if (!audioCtx) {
@@ -496,8 +516,8 @@ async function loadAudioBuffer(url) {
 }
 
 function loadRound() {
-  clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
+  stopAudio();
+  const myToken = ++audioLoadToken;
   state.stageIndex = 0;
   feedbackEl.className = 'feedback';
   feedbackEl.textContent = '';
@@ -519,11 +539,13 @@ function loadRound() {
 
 
   loadAudioBuffer(round.previewUrl).then(buf => {
+    if (myToken !== audioLoadToken) return; // superseded by Next/skip spam
     audioBuffer = buf;
     state.clipDuration = buf.duration;
     state.startOffset = Math.random() * Math.max(0, buf.duration - 10);
     discBtn.disabled = false;
   }).catch(() => {
+    if (myToken !== audioLoadToken) return;
     player.preload = 'auto';
     player.src = round.previewUrl;
     player.load();
@@ -546,11 +568,9 @@ function loadRound() {
 }
 
 function playSnippet() {
-  clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
+  stopAudio();
   discBtn.classList.add('spinning');
   const duration = STAGES[state.stageIndex]; // true 0.1 on all devices
-
 
   if (audioBuffer && audioCtx) {
     const ctx = getAudioCtx();
@@ -566,11 +586,13 @@ function playSnippet() {
       try { src.start(); } catch (e2) { }
     }
     src.onended = () => {
+      if (currentSource !== src) return;
       discBtn.classList.remove('spinning');
       currentSource = null;
     };
     clearTimeout(playTimer);
     playTimer = setTimeout(() => {
+      if (currentSource !== src) return;
       try { src.stop(); } catch (e) { }
       discBtn.classList.remove('spinning');
       currentSource = null;
@@ -595,10 +617,7 @@ player.addEventListener('pause', () => discBtn.classList.remove('spinning'));
 player.addEventListener('ended', () => discBtn.classList.remove('spinning'));
 
 function endRound(correct, pointsEarned) {
-  clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
-  player.pause();
-  discBtn.classList.remove('spinning');
+  stopAudio();
   guessInput.disabled = true;
   guessForm.style.display = 'none';
   hideSongSuggestions();
@@ -688,16 +707,20 @@ function endRound(correct, pointsEarned) {
 }
 
 function advanceStage() {
+  if (skipLocked) return;
   if (state.stageIndex >= STAGES.length - 1) {
     endRound(false, 0);
     return;
   }
+  skipLocked = true;
+  skipBtn.disabled = true;
   state.stageIndex += 1;
   renderStages();
   feedbackEl.className = 'feedback';
   feedbackEl.textContent = '';
   feedbackEl.style.display = 'none';
   playSnippet();
+  setTimeout(() => { skipLocked = false; skipBtn.disabled = false; }, 350);
 }
 
 guessForm.addEventListener('submit', (e) => {
@@ -728,14 +751,7 @@ skipBtn.addEventListener('click', () => {
 });
 
 nextBtn.addEventListener('click', () => {
-  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
-  clearTimeout(playTimer);
-  if (gainNode && audioCtx) {
-    try { gainNode.gain.cancelScheduledValues(audioCtx.currentTime); gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime); } catch(e) {}
-  }
-  player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
-  player.pause();
-  discBtn.classList.remove('spinning');
+  stopAudio();
 
   const lastResult = state.results[state.results.length - 1];
   if (state.gameMode === 'endless' && lastResult && !lastResult.correct) {
@@ -771,12 +787,8 @@ function hideExitModal() {
 }
 
 function returnToSetup() {
-  clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch (e) { } currentSource = null; }
-  if (gainNode && audioCtx) { try { gainNode.gain.cancelScheduledValues(audioCtx.currentTime); gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime); } catch(e) {} }
-  player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
-  player.pause();
-  discBtn.classList.remove('spinning');
+  stopAudio();
+  ++audioLoadToken; // invalidate any pending loadAudioBuffer
   player.removeAttribute('src');
   player.load();
   document.getElementById('game-screen').classList.remove('active');
@@ -810,11 +822,8 @@ navHomeLink.addEventListener('click', (e) => {
 
 // Results
 function showResults() {
-  clearTimeout(playTimer);
-  if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
-  if (gainNode && audioCtx) { try { gainNode.gain.cancelScheduledValues(audioCtx.currentTime); gainNode.gain.setValueAtTime(parseFloat(document.getElementById('volume').value) || 0.8, audioCtx.currentTime); } catch(e) {} }
-  player.pause();
-  discBtn.classList.remove('spinning');
+  stopAudio();
+  ++audioLoadToken;
   document.getElementById('game-screen').classList.remove('active');
   document.getElementById('results-screen').classList.add('active');
   document.getElementById('final-score-num').textContent = state.score;
