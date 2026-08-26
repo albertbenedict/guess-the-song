@@ -14,7 +14,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 
 <body>
@@ -72,65 +72,64 @@
       <div class="error-text" id="setup-error"></div>
       <div class="status-text" id="setup-status"></div>
     </div>
-  </div>
 
-  <div id="game-screen" class="screen">
-    <div class="card game-card">
-      <div class="game-header-row">
-        <button type="button" class="back-btn" id="back-btn" aria-label="Back to setup">&#8592; Back</button>
-        <div class="game-top">
-          <div class="pill">Question <b id="q-current">1</b>/<b id="q-total">10</b></div>
-          <div class="pill">Score <b id="q-score">0</b></div>
-        </div>
-      </div>
-
-      <div class="disc-wrap">
-        <button type="button" class="disc" id="disc-btn" aria-label="Play snippet">
-          <span class="disc-play">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </span>
-        </button>
-      </div>
-
-      <div class="stage-row" id="stage-row"></div>
-
-      <form id="guess-form">
-        <div class="guess-row">
-          <div class="guess-combo">
-            <input type="text" id="guess-input" placeholder="Type a song title..." autocomplete="off">
-            <ul class="song-suggestions" id="song-suggestions" hidden></ul>
+    <div id="game-screen" class="screen">
+      <div class="card">
+        <div class="game-header-row">
+          <button type="button" class="back-btn" id="back-btn" aria-label="Back to setup">&#8592; Back</button>
+          <div class="game-top">
+            <div class="pill">Question <b id="q-current">1</b>/<b id="q-total">10</b></div>
+            <div class="pill">Score <b id="q-score">0</b></div>
           </div>
-          <button type="submit">Guess</button>
         </div>
-      </form>
 
-      <div class="round-actions">
-        <button type="button" class="secondary-btn" id="skip-btn">Skip / reveal more</button>
-        <button type="button" class="secondary-btn" id="next-btn" style="display:none;">Next question</button>
+        <div class="disc-wrap">
+          <button type="button" class="disc" id="disc-btn" aria-label="Play snippet">
+            <span class="disc-play">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="stage-row" id="stage-row"></div>
+
+        <form id="guess-form">
+          <div class="guess-row">
+            <div class="guess-combo">
+              <input type="text" id="guess-input" placeholder="Type a song title..." autocomplete="off">
+              <ul class="song-suggestions" id="song-suggestions" hidden></ul>
+            </div>
+            <button type="submit">Guess</button>
+          </div>
+        </form>
+
+        <div class="round-actions">
+          <button type="button" class="secondary-btn" id="skip-btn">Skip / reveal more</button>
+          <button type="button" class="secondary-btn" id="next-btn" style="display:none;">Next question</button>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+
+        <div class="volume-row">
+          <span>Volume</span>
+          <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8">
+        </div>
       </div>
+    </div>
 
-      <div class="feedback" id="feedback"></div>
-
-      <div class="volume-row">
-        <span>Volume</span>
-        <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8">
+    <div id="results-screen" class="screen">
+      <div class="final-score">
+        <div class="big" id="final-score-num">0</div>
+        <div class="of" id="final-score-of">out of 0</div>
+        <div class="of" id="final-score-extra" style="display:none;"></div>
       </div>
+      <div class="card">
+        <ul class="results-list" id="results-list"></ul>
+      </div>
+      <button type="button" class="primary-btn" id="play-again-btn">Play again</button>
     </div>
-  </div>
-
-  <div id="results-screen" class="screen">
-    <div class="final-score">
-      <div class="big" id="final-score-num">0</div>
-      <div class="of" id="final-score-of">out of 0</div>
-      <div class="of" id="final-score-extra" style="display:none;"></div>
-    </div>
-    <div class="card">
-      <ul class="results-list" id="results-list"></ul>
-    </div>
-    <button type="button" class="primary-btn" id="play-again-btn">Play again</button>
-  </div>
   </div>
 
   <div id="exit-modal" class="modal-overlay hidden" aria-hidden="true">
@@ -145,6 +144,6 @@
   </div>
 
   <audio id="player" preload="auto" playsinline crossorigin="anonymous"></audio>
-  <script src="script.js?v=8"></script>
+  <script src="script.js?v=9"></script>
 </body>
 </html>

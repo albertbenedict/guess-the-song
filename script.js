@@ -1,6 +1,6 @@
 const STAGES = [0.1, 0.5, 2, 5, 10];
 const STAGE_POINTS = [500, 400, 300, 200, 100];
-const MAX_ARTISTS = 4;
+const MAX_ARTISTS = 5;
 
 let state = {
   difficulty: 'easy',
@@ -164,8 +164,19 @@ function setupArtistAutocomplete(row) {
   });
 }
 
+function updateAddArtistBtn() {
+  const atLimit = artistList.children.length >= MAX_ARTISTS;
+  addArtistBtn.disabled = atLimit;
+  addArtistBtn.textContent = atLimit ? 'Maximum of 5 artists reached' : '+ Add another artist';
+  addArtistBtn.style.cursor = atLimit ? 'default' : '';
+  addArtistBtn.style.opacity = atLimit ? '0.6' : '';
+}
+
 function addArtistRow() {
-  if (artistList.children.length >= MAX_ARTISTS) return;
+  if (artistList.children.length >= MAX_ARTISTS) {
+    updateAddArtistBtn();
+    return;
+  }
   const row = document.createElement('div');
   row.className = 'artist-row';
 
@@ -201,11 +212,13 @@ function addArtistRow() {
 
   artistList.appendChild(row);
   setupArtistAutocomplete(row);
+  updateAddArtistBtn();
 }
 
 function removeOrClearRow(row) {
   if (artistList.children.length > 1) {
     row.remove();
+    updateAddArtistBtn();
     return;
   }
   // last remaining row: clear it instead of leaving zero artist fields
@@ -221,6 +234,7 @@ function removeOrClearRow(row) {
 }
 
 addArtistRow();
+updateAddArtistBtn();
 addArtistBtn.addEventListener('click', () => addArtistRow());
 
 const diffDesc = {
@@ -325,6 +339,8 @@ function pickOneRound() {
 
 // ---------- Setup -> Start ----------
 startBtn.addEventListener('click', async () => {
+  // Unlock AudioContext synchronously inside user gesture (before any await) for iPhone 0.1s
+  try { getAudioCtx(); } catch (e) { }
   setupError.classList.remove('show');
   const rows = [...artistList.querySelectorAll('.artist-row')];
   const artistData = rows.map(row => {
