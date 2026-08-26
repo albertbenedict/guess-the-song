@@ -29,7 +29,7 @@ const startBtn = document.getElementById('start-btn');
 const setupError = document.getElementById('setup-error');
 const setupStatus = document.getElementById('setup-status');
 
-// ---------- Theme toggle ----------
+// Theme toggle
 const themeSwitch = document.getElementById('theme-switch');
 if (themeSwitch) {
   themeSwitch.checked = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -40,7 +40,7 @@ if (themeSwitch) {
   });
 }
 
-// ---------- Game mode ----------
+// Game mode
 const modeDesc = {
   normal: 'Fixed number of questions',
   endless: 'Keep playing until you fail'
@@ -56,7 +56,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
-// ---------- Number-of-questions stepper ----------
+// Number-of-questions stepper
 const questionCountInput = document.getElementById('question-count');
 document.getElementById('qty-minus').addEventListener('click', () => {
   questionCountInput.value = Math.max(3, (parseInt(questionCountInput.value, 10) || 10) - 1);
@@ -65,7 +65,7 @@ document.getElementById('qty-plus').addEventListener('click', () => {
   questionCountInput.value = Math.min(30, (parseInt(questionCountInput.value, 10) || 10) + 1);
 });
 
-// ---------- Artist search (name + artwork in a single call) ----------
+// Artist search
 async function searchArtists(query) {
   const url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&entity=song&limit=25';
   const res = await fetch(url);
@@ -221,7 +221,7 @@ function removeOrClearRow(row) {
     updateAddArtistBtn();
     return;
   }
-  // last remaining row: clear it instead of leaving zero artist fields
+
   const input = row.querySelector('.artist-input');
   const combo = row.querySelector('.artist-combo');
   const avatar = row.querySelector('.artist-avatar');
@@ -239,7 +239,7 @@ addArtistBtn.addEventListener('click', () => addArtistRow());
 
 const diffDesc = {
   easy: 'Most popular songs or hits',
-  medium: 'Includes popular songs and some deep cuts', // you have "Mix of..." currently - change if you want exact wording
+  medium: 'Includes popular songs and some deep cuts', 
   hard: 'All songs from hits to rare tracks'
 };
 document.querySelectorAll('.diff-btn').forEach(btn => {
@@ -251,7 +251,7 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
   });
 });
 
-// ---------- Song fetching / pooling ----------
+// Song fetching 
 function normalize(str) {
   return str
     .toLowerCase()
@@ -337,7 +337,7 @@ function pickOneRound() {
   return state.hardBag.pop();
 }
 
-// ---------- Setup -> Start ----------
+// Setup -> Start
 startBtn.addEventListener('click', async () => {
   // Unlock AudioContext synchronously inside user gesture (before any await) for iPhone 0.1s
   try { getAudioCtx(); } catch (e) { }
@@ -407,7 +407,7 @@ startBtn.addEventListener('click', async () => {
   }
 });
 
-// ---------- Game screen ----------
+// Game screen
 const discBtn = document.getElementById('disc-btn');
 const stageRow = document.getElementById('stage-row');
 const feedbackEl = document.getElementById('feedback');
@@ -467,7 +467,7 @@ guessInput.addEventListener('input', () => renderSongSuggestions(guessInput.valu
 guessInput.addEventListener('focus', () => renderSongSuggestions(guessInput.value));
 guessInput.addEventListener('blur', () => setTimeout(hideSongSuggestions, 150));
 
-// ---------- Web Audio - true 0.1s on all devices (like songspot.net) ----------
+// Web Audio - true 0.1s on all devices
 let audioCtx = null;
 let audioBuffer = null;
 let currentSource = null;
@@ -517,14 +517,13 @@ function loadRound() {
   player.pause();
   discBtn.disabled = true;
 
-  // Try Web Audio first (precise 0.1s), fallback to <audio> if decode fails
+
   loadAudioBuffer(round.previewUrl).then(buf => {
     audioBuffer = buf;
     state.clipDuration = buf.duration;
     state.startOffset = Math.random() * Math.max(0, buf.duration - 10);
     discBtn.disabled = false;
   }).catch(() => {
-    // Fallback: use <audio> element
     player.preload = 'auto';
     player.src = round.previewUrl;
     player.load();
@@ -552,7 +551,7 @@ function playSnippet() {
   discBtn.classList.add('spinning');
   const duration = STAGES[state.stageIndex]; // true 0.1 on all devices
 
-  // Use Web Audio if buffer is ready (precise), fallback to <audio>
+
   if (audioBuffer && audioCtx) {
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') ctx.resume();
@@ -628,7 +627,7 @@ function endRound(correct, pointsEarned) {
     }
   }
 
-  // Play rest of preview (max 10s) with 1.5s fade - interruptible via Next
+  // Play rest of preview with 1.5s fade 
   const fullPreviewLen = Math.min(10, (audioBuffer ? audioBuffer.duration : state.clipDuration) - state.startOffset);
   if (fullPreviewLen > 0.3) {
     if (audioBuffer && audioCtx) {
@@ -729,7 +728,6 @@ skipBtn.addEventListener('click', () => {
 });
 
 nextBtn.addEventListener('click', () => {
-  // Stop full-preview if user skips early (and reset fade)
   if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
   clearTimeout(playTimer);
   if (gainNode && audioCtx) {
@@ -757,7 +755,7 @@ nextBtn.addEventListener('click', () => {
   }
 });
 
-// ---------- Back button + exit modal ----------
+// Back button + exit modal
 const backBtn = document.getElementById('back-btn');
 const exitModal = document.getElementById('exit-modal');
 const exitCancelBtn = document.getElementById('exit-cancel-btn');
@@ -810,7 +808,7 @@ navHomeLink.addEventListener('click', (e) => {
   }
 });
 
-// ---------- Results ----------
+// Results
 function showResults() {
   clearTimeout(playTimer);
   if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
