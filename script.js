@@ -1,6 +1,8 @@
 const STAGES = [0.1, 0.5, 2, 5, 10];
 const STAGE_POINTS = [500, 400, 300, 200, 100];
 const MAX_ARTISTS = 5;
+const youtubePhotoCache = new Map();
+const YOUTUBE_API_KEY = 'AIzaSyDm9c0VJt-MEPl5krMcuwcQpTb8g8wscf4'; // referrer-restricted
 
 let state = {
   difficulty: 'easy',
@@ -86,6 +88,32 @@ async function searchArtists(query) {
   return [...seen.values()];
 }
 
+async function fetchYouTubePhoto(artistName) {
+  if (youtubePhotoCache.has(artistName)) return youtubePhotoCache.get(artistName);
+  try {
+    const url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=5&q=' +
+      encodeURIComponent(artistName + ' - Topic') + '&key=' + YOUTUBE_API_KEY;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('YouTube API status', res.status, await res.text());
+      throw new Error('YouTube API error');
+    }
+    const data = await res.json();
+    const target = artistName.trim().toLowerCase();
+    const match = (data.items || []).find(item => {
+      const title = (item.snippet.title || '').toLowerCase();
+      return title.includes('- topic') && title.includes(target);
+    });
+    const photo = match?.snippet?.thumbnails?.high?.url || match?.snippet?.thumbnails?.default?.url || null;
+    youtubePhotoCache.set(artistName, photo);
+    return photo;
+  } catch (e) {
+    console.error('YouTube photo fetch failed for', artistName, e);
+    youtubePhotoCache.set(artistName, null);
+    return null;
+  }
+}
+
 function setupArtistAutocomplete(row) {
   const input = row.querySelector('.artist-input');
   const list = row.querySelector('.artist-suggestions');
@@ -111,7 +139,7 @@ function setupArtistAutocomplete(row) {
       return;
     }
     list.innerHTML = '';
-    currentResults.forEach(r => {
+    currentResults.forEach((r, idx) => {
       const li = document.createElement('li');
       li.className = 'suggestion-item';
       const imgHtml = r.artwork
@@ -127,8 +155,25 @@ function setupArtistAutocomplete(row) {
         input.dataset.artworkUrl = r.artwork || '';
         updateAvatar();
         list.hidden = true;
+        fetchYouTubePhoto(r.artistName).then(photoUrl => {
+          if (photoUrl && input.value === r.artistName) {
+            input.dataset.artworkUrl = photoUrl;
+            updateAvatar();
+          }
+        });
       });
       list.appendChild(li);
+      // Only upgrade the top suggestion's thumbnail — doing this for all 8
+      // rows would multiply YouTube quota usage per search.
+      if (idx === 0) {
+        const resultsSnapshot = currentResults; // race guard: bail if a newer search replaced this
+        fetchYouTubePhoto(r.artistName).then(photoUrl => {
+          if (photoUrl && currentResults === resultsSnapshot) {
+            const img = li.querySelector('.suggestion-artwork');
+            if (img) img.src = photoUrl;
+          }
+        });
+      }
     });
     list.hidden = false;
   }
