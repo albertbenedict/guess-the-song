@@ -94,10 +94,7 @@ async function fetchYouTubePhoto(artistName) {
     const url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=5&q=' +
       encodeURIComponent(artistName + ' - Topic') + '&key=' + YOUTUBE_API_KEY;
     const res = await fetch(url);
-    if (!res.ok) {
-      console.error('YouTube API status', res.status, await res.text());
-      throw new Error('YouTube API error');
-    }
+    if (!res.ok) throw new Error('YouTube API error');
     const data = await res.json();
     const target = artistName.trim().toLowerCase();
     const match = (data.items || []).find(item => {
@@ -108,7 +105,6 @@ async function fetchYouTubePhoto(artistName) {
     youtubePhotoCache.set(artistName, photo);
     return photo;
   } catch (e) {
-    console.error('YouTube photo fetch failed for', artistName, e);
     youtubePhotoCache.set(artistName, null);
     return null;
   }
