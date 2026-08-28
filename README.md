@@ -1,43 +1,37 @@
-# Guess the Song!
+# Guess the Song! — [Play → https://albertbenedict.github.io/guess-the-song/](https://albertbenedict.github.io/guess-the-song/)
 
-A song-guessing game: pick an artist (or a few), pick a mode and difficulty,
-and try to name the song from the shortest possible clip.
+A song-guessing game: pick 1–5 artists, guess from the shortest clip you can (0.1s → 10s).
+
+![Setup screenshot](screenshot.png)
 
 ## Running it
+1. VS Code → `File > Open Folder...` → this folder
+2. Install **Live Server** → right-click `index.html` → **Open with Live Server**
+3. Opens at `http://localhost:5500` — or just use the Play link above.
 
-1. Open this folder in VS Code (`File > Open Folder...`).
-2. Install the **Live Server** extension from the Extensions tab.
-3. Right-click `index.html` in the file explorer → **Open with Live Server**.
-4. It opens at something like `http://312.7.5.4:5500` — that's it, working.
+## Features
+- **Modes:** Normal (3–30 Q, stepper) / Endless (∞ until fail, best run in `localStorage`)
+- **Difficulty:** Easy (hits only) / Medium (65% hits) / Hard (all) — hit = top ~20% iTunes relevance (heuristic, not charts)
+- **Staged reveals:** 0.1s / 0.5s / 2s / 5s / 10s → 500 / 400 / 300 / 200 / 100 pts. Wrong guess → auto-reveal longer clip. Cover art shown on reveal.
+- **UX:** 5 artists max (`+ Add` → `Maximum of 5 reached`), light/dark theme (portfolio vars), 640px centered, iOS 16px anti-zoom + `touch-action: manipulation` + hover only on mouse.
 
-or just use this: https://albertbenedict.github.io/guess-the-song/
+## How to play
+1. Type artist → pick from dropdown (`PLAY` badge). Avatar swaps iTunes → YouTube `- Topic` if available.
+2. Pick mode/difficulty → **Start game**
+3. Tap disc to hear clip → type guess (autocomplete from pool) → **Guess** or **Skip / reveal more**
+4. After correct / `10s` reveal, **Guess hides, Next moves up** → `View score` on last Q.
+
+## Tech
+- Vanilla `index.html / style.css / script.js` — no build, `?v=12` cache-bust.
+- **Audio:** `Web Audio AudioBufferSource.start(0, offset, duration)` for true 0.1s (iOS-unlocked sync in click, `AudioContext` + `GainNode` fade 1.5s), `<audio>` fallback. `stopAudio()` + `audioLoadToken` fixes spam Skip/Next race.
+- **APIs:** iTunes `search / lookup?entity=song&limit=200` (`previewUrl` 30s, `artworkUrl100`) unlimited + YouTube Data v3 `search?type=channel&q=Artist - Topic` (100/day, `Map` cached, top-row thumbnail upgrade + avatar upgrade, referrer-restricted `https://albertbenedict.github.io/*`).
+- **Layout:** `.app` wraps all screens (`100px` top clear fixed navbar), `6px` sticker card, 5 breakpoints.
 
 ## Files
+- `index.html` — structure, `.app` nesting (fixed)
+- `style.css` — portfolio theme, responsive + `hover: hover` wrapper
+- `script.js` — pools/bags, `Web Audio`, artist/YouTube fetch
 
-- `index.html` — page structure/markup
-- `style.css` — theme (light + dark mode) and layout
-- `script.js` — game logic: artist search, fetching songs from iTunes, round
-  flow, scoring, results screen
-- `README.md` — this file
-
-## How the game works
-
-- Type an artist name in the search box and pick it from the dropdown — one
-  iTunes call returns both the name and an album-cover thumbnail together.
-- Choose a mode: **Normal** plays a fixed number of questions (± with the
-  stepper). **Endless** keeps going until you fail to guess a song, then
-  shows how many you got in a row and tracks your best run in this browser.
-- Choose difficulty: Easy = well-known songs only, Medium = a weighted mix
-  leaning toward well-known songs, Hard = fully random across the whole
-  catalog fetched for that artist.
-- "Hit" vs. "deep cut" is a heuristic (top ~20% of iTunes's search-relevance
-  results per artist counts as a hit) — not real chart data, since that isn't
-  available from a free, no-auth API.
-- Each round plays a random point in the song.
-- Guessing has its own autocomplete dropdown with album covers, filtered
-  from the songs available for your chosen artist(s).
-- Scoring: 500 / 400 / 300 / 200 / 100 points for guessing correctly at the
-  0.1s / 0.5s / 2s / 5s / 10s reveal. A wrong guess automatically reveals a
-  longer clip; Skip does the same without requiring a guess first. The
-  album cover shows alongside both the correct-guess and reveal messages.
-
+## Known limits
+- 30s iTunes previews only; `- Topic` requires artist has auto-generated YouTube channel.
+- YouTube quota 100 fresh artists/day (cached repeats free).
