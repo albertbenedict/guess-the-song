@@ -25,7 +25,7 @@ A song-guessing game: pick 1–5 artists, guess from the shortest clip you can (
 - Vanilla `index.html / style.css / script.js` — no build, `?v=12` cache-bust.
 - **Audio:** `Web Audio AudioBufferSource.start(0, offset, duration)` for true 0.1s (iOS-unlocked sync in click, `AudioContext` + `GainNode` fade 1.5s), `<audio>` fallback. `stopAudio()` + `audioLoadToken` fixes spam Skip/Next race.
 - **APIs:** iTunes `search / lookup?entity=song&limit=200` (`previewUrl` 30s, `artworkUrl100`) unlimited + YouTube Data v3 `search?type=channel&q=Artist - Topic` (100/day, `Map` cached, top-row thumbnail upgrade + avatar upgrade, referrer-restricted `https://albertbenedict.github.io/*`).
-- **Layout:** `.app` wraps all screens (`100px` top clear fixed navbar), `6px` sticker card, 5 breakpoints.
+- **Layout:** `.app` wraps all screens, `6px` sticker card, 5 breakpoints.
 
 ## Files
 - `index.html` — structure, `.app` nesting (fixed)
