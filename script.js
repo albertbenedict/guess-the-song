@@ -207,9 +207,7 @@ function setupArtistAutocomplete(row) {
 function updateAddArtistBtn() {
   const atLimit = artistList.children.length >= MAX_ARTISTS;
   addArtistBtn.disabled = atLimit;
-  addArtistBtn.textContent = atLimit ? 'Maximum of 5 artists reached' : '+ Add another artist';
-  addArtistBtn.style.cursor = atLimit ? 'default' : '';
-  addArtistBtn.style.opacity = atLimit ? '0.6' : '';
+  addArtistBtn.textContent = atLimit ? `Maximum of ${MAX_ARTISTS} artists reached` : '+ Add another artist';
 }
 
 function addArtistRow() {
@@ -517,7 +515,6 @@ let currentSource = null;
 let gainNode = null;
 let audioLoadToken = 0;
 let skipLocked = false;
-let nextLocked = false;
 
 function stopAudio() {
   if (currentSource) {
