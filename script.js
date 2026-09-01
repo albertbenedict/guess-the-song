@@ -159,10 +159,8 @@ function setupArtistAutocomplete(row) {
         });
       });
       list.appendChild(li);
-      // Only upgrade the top suggestion's thumbnail — doing this for all 8
-      // rows would multiply YouTube quota usage per search.
       if (idx === 0) {
-        const resultsSnapshot = currentResults; // race guard: bail if a newer search replaced this
+        const resultsSnapshot = currentResults; 
         fetchYouTubePhoto(r.artistName).then(photoUrl => {
           if (photoUrl && currentResults === resultsSnapshot) {
             const img = li.querySelector('.suggestion-artwork');
@@ -512,7 +510,7 @@ guessInput.addEventListener('focus', () => {
 });
 guessInput.addEventListener('blur', () => setTimeout(hideSongSuggestions, 150));
 
-// Web Audio - true 0.1s on all devices
+// Web Audio
 let audioCtx = null;
 let audioBuffer = null;
 let currentSource = null;
@@ -615,7 +613,7 @@ function loadRound() {
 function playSnippet() {
   stopAudio();
   discBtn.classList.add('spinning');
-  const duration = STAGES[state.stageIndex]; // true 0.1 on all devices
+  const duration = STAGES[state.stageIndex]; 
 
   if (audioBuffer && audioCtx) {
     const ctx = getAudioCtx();
@@ -728,7 +726,6 @@ function endRound(correct, pointsEarned) {
       player.volume = parseFloat(document.getElementById('volume').value) || 0.8;
       player.play().catch(()=>{});
       discBtn.classList.add('spinning');
-      // HTMLAudio fade via interval
       const fadeDur = Math.min(1500, fullPreviewLen * 400);
       const fadeStart = Math.max(0, fullPreviewLen * 1000 - fadeDur);
       setTimeout(() => {
@@ -863,6 +860,20 @@ navHomeLink.addEventListener('click', (e) => {
   } else {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+});
+
+// Keyboard shortcut: Space to replay snippet
+document.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space' || e.repeat) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const active = document.activeElement;
+  const isTyping = active === guessInput || active?.classList?.contains('artist-input');
+  if (isTyping) return;
+  const gameScreen = document.getElementById('game-screen');
+  if (!gameScreen.classList.contains('active')) return;
+  if (discBtn.disabled) return;
+  e.preventDefault();
+  playSnippet();
 });
 
 // Results
