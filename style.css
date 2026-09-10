@@ -402,6 +402,8 @@ input[type=range] { accent-color: var(--text-color); width: 120px; }
 @media only screen and (max-width: 380px) {
   .pill { font-size: 11px; padding: 4px 10px; }
 }
+.suggestion-item.active { background: var(--surface-2); border-color: var(--border-color); }
+
 @media (hover: hover) and (pointer: fine) {
   .suggestion-item:hover { background: var(--surface-2); border-color: var(--border-color); }
   .suggestion-item:hover .suggestion-play { background: #ffd43b; }

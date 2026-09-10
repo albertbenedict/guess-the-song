@@ -466,9 +466,19 @@ function renderStages() {
   });
 }
 
+let songSuggestionIndex = -1;
+
 function hideSongSuggestions() {
   songSuggestions.hidden = true;
   songSuggestions.innerHTML = '';
+  songSuggestionIndex = -1;
+}
+
+function updateSongSuggestionHighlight() {
+  [...songSuggestions.children].forEach((li, i) => {
+    li.classList.toggle('active', i === songSuggestionIndex);
+    if (i === songSuggestionIndex) li.scrollIntoView({ block: 'nearest' });
+  });
 }
 
 function renderSongSuggestions(query) {
@@ -483,6 +493,7 @@ function renderSongSuggestions(query) {
     return;
   }
   songSuggestions.innerHTML = '';
+  songSuggestionIndex = -1;
   matches.forEach(t => {
     const li = document.createElement('li');
     li.className = 'suggestion-item song';
@@ -496,6 +507,10 @@ function renderSongSuggestions(query) {
       hideSongSuggestions();
       guessInput.focus();
     });
+    li.addEventListener('mouseenter', () => {
+      songSuggestionIndex = [...songSuggestions.children].indexOf(li);
+      updateSongSuggestionHighlight();
+    });
     songSuggestions.appendChild(li);
   });
   songSuggestions.hidden = false;
@@ -506,6 +521,29 @@ guessInput.addEventListener('focus', () => {
   renderSongSuggestions(guessInput.value);
   setTimeout(() => { try { guessInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { } }, 120);
 });
+guessInput.addEventListener('keydown', (e) => {
+  if (songSuggestions.hidden || !songSuggestions.children.length) return;
+  const count = songSuggestions.children.length;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    songSuggestionIndex = (songSuggestionIndex + 1) % count;
+    updateSongSuggestionHighlight();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    songSuggestionIndex = (songSuggestionIndex - 1 + count) % count;
+    updateSongSuggestionHighlight();
+  } else if (e.key === 'Enter' && songSuggestionIndex >= 0) {
+    e.preventDefault();
+    const t = state.allPool.filter(x => x.title.toLowerCase().includes(guessInput.value.trim().toLowerCase())).slice(0, 8)[songSuggestionIndex];
+    if (t) {
+      guessInput.value = t.title;
+      hideSongSuggestions();
+    }
+  } else if (e.key === 'Escape') {
+    hideSongSuggestions();
+  }
+});
+
 guessInput.addEventListener('blur', () => setTimeout(hideSongSuggestions, 150));
 
 // Web Audio
