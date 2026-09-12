@@ -2,7 +2,7 @@ const STAGES = [0.1, 0.5, 2, 5, 10];
 const STAGE_POINTS = [500, 400, 300, 200, 100];
 const MAX_ARTISTS = 5;
 const youtubePhotoCache = new Map();
-const YOUTUBE_API_KEY = 'AIzaSyDm9c0VJt-MEPl5krMcuwcQpTb8g8wscf4'; // referrer-restricted
+const YOUTUBE_API_KEY = 'AIzaSyDm9c0VJt-MEPl5krMcuwcQpTb8g8wscf4';
 
 let state = {
   difficulty: 'easy',
@@ -31,7 +31,6 @@ const startBtn = document.getElementById('start-btn');
 const setupError = document.getElementById('setup-error');
 const setupStatus = document.getElementById('setup-status');
 
-// Theme toggle
 const themeSwitch = document.getElementById('theme-switch');
 if (themeSwitch) {
   themeSwitch.checked = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -42,7 +41,6 @@ if (themeSwitch) {
   });
 }
 
-// Game mode
 const modeDesc = {
   normal: 'Fixed number of questions',
   endless: 'Keep playing until you fail'
@@ -58,7 +56,6 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
-// Number-of-questions stepper
 const questionCountInput = document.getElementById('question-count');
 document.getElementById('qty-minus').addEventListener('click', () => {
   questionCountInput.value = Math.max(3, (parseInt(questionCountInput.value, 10) || 10) - 1);
@@ -67,7 +64,6 @@ document.getElementById('qty-plus').addEventListener('click', () => {
   questionCountInput.value = Math.min(30, (parseInt(questionCountInput.value, 10) || 10) + 1);
 });
 
-// Artist search
 async function searchArtists(query) {
   const url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&entity=song&limit=25';
   const res = await fetch(url);
@@ -117,6 +113,29 @@ function setupArtistAutocomplete(row) {
   const combo = row.querySelector('.artist-combo');
   let debounceTimer = null;
   let currentResults = [];
+  let artistSuggestionIndex = -1;
+
+  function updateArtistHighlight() {
+    [...list.children].forEach((li, i) => {
+      li.classList.toggle('active', i === artistSuggestionIndex);
+      if (i === artistSuggestionIndex) li.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  function selectArtistResult(r) {
+    input.value = r.artistName;
+    input.dataset.artistId = r.artistId;
+    input.dataset.artworkUrl = r.artwork || '';
+    updateAvatar();
+    list.hidden = true;
+    artistSuggestionIndex = -1;
+    fetchYouTubePhoto(r.artistName).then(photoUrl => {
+      if (photoUrl && input.value === r.artistName) {
+        input.dataset.artworkUrl = photoUrl;
+        updateAvatar();
+      }
+    });
+  }
 
   function updateAvatar() {
     if (input.dataset.artworkUrl) {
@@ -132,9 +151,11 @@ function setupArtistAutocomplete(row) {
     if (currentResults.length === 0) {
       list.hidden = true;
       list.innerHTML = '';
+      artistSuggestionIndex = -1;
       return;
     }
     list.innerHTML = '';
+    artistSuggestionIndex = -1;
     currentResults.forEach((r, idx) => {
       const li = document.createElement('li');
       li.className = 'suggestion-item';
@@ -146,17 +167,11 @@ function setupArtistAutocomplete(row) {
         '<span class="suggestion-play">PLAY</span>';
       li.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        input.value = r.artistName;
-        input.dataset.artistId = r.artistId;
-        input.dataset.artworkUrl = r.artwork || '';
-        updateAvatar();
-        list.hidden = true;
-        fetchYouTubePhoto(r.artistName).then(photoUrl => {
-          if (photoUrl && input.value === r.artistName) {
-            input.dataset.artworkUrl = photoUrl;
-            updateAvatar();
-          }
-        });
+        selectArtistResult(r);
+      });
+      li.addEventListener('mouseenter', () => {
+        artistSuggestionIndex = [...list.children].indexOf(li);
+        updateArtistHighlight();
       });
       list.appendChild(li);
       if (idx === 0) {
@@ -199,8 +214,28 @@ function setupArtistAutocomplete(row) {
     setTimeout(() => { try { combo.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { } }, 120);
   });
 
+  input.addEventListener('keydown', (e) => {
+    if (list.hidden || !list.children.length) return;
+    const count = list.children.length;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      artistSuggestionIndex = (artistSuggestionIndex + 1) % count;
+      updateArtistHighlight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      artistSuggestionIndex = (artistSuggestionIndex - 1 + count) % count;
+      updateArtistHighlight();
+    } else if (e.key === 'Enter' && artistSuggestionIndex >= 0) {
+      e.preventDefault();
+      selectArtistResult(currentResults[artistSuggestionIndex]);
+    } else if (e.key === 'Escape') {
+      list.hidden = true;
+      artistSuggestionIndex = -1;
+    }
+  });
+
   input.addEventListener('blur', () => {
-    setTimeout(() => { list.hidden = true; }, 180);
+    setTimeout(() => { list.hidden = true; artistSuggestionIndex = -1; }, 180);
   });
 }
 
@@ -289,7 +324,6 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
   });
 });
 
-// Song fetching 
 function normalize(str) {
   return str
     .toLowerCase()
@@ -375,9 +409,7 @@ function pickOneRound() {
   return state.hardBag.pop();
 }
 
-// Setup -> Start
 startBtn.addEventListener('click', async () => {
-  // Unlock AudioContext synchronously inside user gesture (before any await) for iPhone 0.1s
   try { getAudioCtx(); } catch (e) { }
   setupError.classList.remove('show');
   const rows = [...artistList.querySelectorAll('.artist-row')];
@@ -445,7 +477,6 @@ startBtn.addEventListener('click', async () => {
   }
 });
 
-// Game screen
 const discBtn = document.getElementById('disc-btn');
 const stageRow = document.getElementById('stage-row');
 const feedbackEl = document.getElementById('feedback');
@@ -546,7 +577,6 @@ guessInput.addEventListener('keydown', (e) => {
 
 guessInput.addEventListener('blur', () => setTimeout(hideSongSuggestions, 150));
 
-// Web Audio
 let audioCtx = null;
 let audioBuffer = null;
 let currentSource = null;
@@ -617,7 +647,7 @@ function loadRound() {
 
 
   loadAudioBuffer(round.previewUrl).then(buf => {
-    if (myToken !== audioLoadToken) return; // superseded by Next/skip spam
+    if (myToken !== audioLoadToken) return;
     audioBuffer = buf;
     state.clipDuration = buf.duration;
     state.startOffset = Math.random() * Math.max(0, buf.duration - 10);
@@ -638,7 +668,6 @@ function loadRound() {
     setTimeout(onMeta, 3000);
   });
 
-  // Preload next round buffer in background
   const nextRound = state.rounds[state.currentIndex + 1];
   if (nextRound && nextRound.previewUrl) {
     loadAudioBuffer(nextRound.previewUrl).catch(() => { });
@@ -678,7 +707,6 @@ function playSnippet() {
     return;
   }
 
-  // Fallback: HTMLAudio (for decode failure)
   try { player.currentTime = state.startOffset; } catch (e) { }
   player.volume = parseFloat(document.getElementById('volume').value);
   const p = player.play();
@@ -724,7 +752,6 @@ function endRound(correct, pointsEarned) {
     }
   }
 
-  // Play rest of preview with 1.5s fade 
   const fullPreviewLen = Math.min(10, (audioBuffer ? audioBuffer.duration : state.clipDuration) - state.startOffset);
   if (fullPreviewLen > 0.3) {
     if (audioBuffer && audioCtx) {
@@ -848,7 +875,6 @@ nextBtn.addEventListener('click', () => {
   }
 });
 
-// Back button + exit modal
 const backBtn = document.getElementById('back-btn');
 const exitModal = document.getElementById('exit-modal');
 const exitCancelBtn = document.getElementById('exit-cancel-btn');
@@ -865,7 +891,7 @@ function hideExitModal() {
 
 function returnToSetup() {
   stopAudio();
-  ++audioLoadToken; // invalidate any pending loadAudioBuffer
+  ++audioLoadToken;
   player.removeAttribute('src');
   player.load();
   document.getElementById('game-screen').classList.remove('active');
@@ -897,7 +923,6 @@ navHomeLink.addEventListener('click', (e) => {
   }
 });
 
-// Keyboard shortcut: Space to replay snippet
 document.addEventListener('keydown', (e) => {
   if (e.code !== 'Space' || e.repeat) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -911,7 +936,6 @@ document.addEventListener('keydown', (e) => {
   playSnippet();
 });
 
-// Results
 function showResults() {
   stopAudio();
   ++audioLoadToken;
