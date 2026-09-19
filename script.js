@@ -3,6 +3,8 @@ const STAGE_POINTS = [500, 400, 300, 200, 100];
 const MAX_ARTISTS = 5;
 const youtubePhotoCache = new Map();
 const YOUTUBE_API_KEY = 'AIzaSyDm9c0VJt-MEPl5krMcuwcQpTb8g8wscf4';
+const spotifyPopularityCache = new Map();
+const SPOTIFY_PROXY_URL = 'https://guess-the-song-amber.vercel.app/api/spotify';
 
 let state = {
   difficulty: 'easy',
@@ -379,6 +381,38 @@ function buildTiers(tracks) {
   return { hits, niche };
 }
 
+async function fetchSpotifyPopularity(artist, title) {
+  const key = (artist + '|' + title).toLowerCase();
+  if (spotifyPopularityCache.has(key)) return spotifyPopularityCache.get(key);
+  if (!SPOTIFY_PROXY_URL) { spotifyPopularityCache.set(key, 50); return 50; }
+  try {
+    const url = SPOTIFY_PROXY_URL + '?q=' + encodeURIComponent(artist + ' ' + title);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Spotify proxy ' + res.status);
+    const data = await res.json();
+    const pop = typeof data.popularity === 'number' ? data.popularity : 50;
+    spotifyPopularityCache.set(key, pop);
+    return pop;
+  } catch (e) {
+    spotifyPopularityCache.set(key, 50);
+    return 50;
+  }
+}
+
+async function enrichTracksWithPopularity(tracks) {
+  if (!SPOTIFY_PROXY_URL) return tracks;
+  const out = [];
+  for (let i = 0; i < tracks.length; i += 5) {
+    const batch = tracks.slice(i, i + 5);
+    const enriched = await Promise.all(batch.map(async t => {
+      const pop = await fetchSpotifyPopularity(t.artist, t.title);
+      return { ...t, popularity: pop };
+    }));
+    out.push(...enriched);
+  }
+  return out.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+}
+
 function refillBagIfEmpty(bagKey, source) {
   if (state[bagKey].length === 0 && source.length) {
     state[bagKey] = shuffle(source);
@@ -443,6 +477,15 @@ startBtn.addEventListener('click', async () => {
       allNiche = allNiche.concat(niche);
       all = all.concat(tracks);
     }
+    // If Spotify proxy set, enrich all tracks with popularity and resort pools by real streams
+    if (SPOTIFY_PROXY_URL) {
+      setupStatus.textContent = 'Ranking by Spotify streams...';
+      all = await enrichTracksWithPopularity(all);
+      const byPop = [...all].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+      const hitCount = Math.max(3, Math.min(byPop.length, Math.round(byPop.length * 0.3)));
+      allHits = byPop.slice(0, hitCount).map(t => ({ ...t, tier: 'hit' }));
+      allNiche = byPop.slice(hitCount).map(t => ({ ...t, tier: 'niche' }));
+    }
     state.hitPool = allHits;
     state.nichePool = allNiche;
     state.allPool = all;
@@ -498,11 +541,13 @@ function renderStages() {
 }
 
 let songSuggestionIndex = -1;
+let currentSongMatches = [];
 
 function hideSongSuggestions() {
   songSuggestions.hidden = true;
   songSuggestions.innerHTML = '';
   songSuggestionIndex = -1;
+  currentSongMatches = [];
 }
 
 function updateSongSuggestionHighlight() {
@@ -519,6 +564,7 @@ function renderSongSuggestions(query) {
     return;
   }
   const matches = state.allPool.filter(t => t.title.toLowerCase().includes(q)).slice(0, 8);
+  currentSongMatches = matches;
   if (matches.length === 0) {
     hideSongSuggestions();
     return;
@@ -565,7 +611,7 @@ guessInput.addEventListener('keydown', (e) => {
     updateSongSuggestionHighlight();
   } else if (e.key === 'Enter' && songSuggestionIndex >= 0) {
     e.preventDefault();
-    const t = state.allPool.filter(x => x.title.toLowerCase().includes(guessInput.value.trim().toLowerCase())).slice(0, 8)[songSuggestionIndex];
+    const t = currentSongMatches[songSuggestionIndex];
     if (t) {
       guessInput.value = t.title;
       hideSongSuggestions();
