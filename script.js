@@ -13,6 +13,9 @@ let state = {
   hitPool: [],
   nichePool: [],
   allPool: [],
+  easyPool: [],
+  easyArtistPools: [],
+  easyGuaranteeQueue: [],
   rounds: [],
   currentIndex: 0,
   score: 0,
@@ -422,7 +425,10 @@ function refillBagIfEmpty(bagKey, source) {
 function pickOneRound() {
   const { difficulty, hitPool, nichePool, allPool } = state;
   if (difficulty === 'easy') {
-    const source = hitPool.length ? hitPool : allPool;
+    if (state.easyGuaranteeQueue && state.easyGuaranteeQueue.length) {
+      return state.easyGuaranteeQueue.shift();
+    }
+    const source = state.easyPool.length ? state.easyPool : (hitPool.length ? hitPool : allPool);
     refillBagIfEmpty('easyBag', source);
     return state.easyBag.pop();
   }
@@ -466,28 +472,59 @@ startBtn.addEventListener('click', async () => {
 
   try {
     let allHits = [], allNiche = [], all = [];
+    const perArtistRaw = [];
     for (const a of artistData) {
       setupStatus.textContent = 'Fetching ' + a.name + '...';
       const tracks = await fetchArtistSongs(a.name, a.id);
       if (tracks.length === 0) {
         throw new Error('No songs found for "' + a.name + '". Try picking it from the search suggestions.');
       }
+      perArtistRaw.push({ name: a.name, tracks });
       const { hits, niche } = buildTiers(tracks);
       allHits = allHits.concat(hits);
       allNiche = allNiche.concat(niche);
       all = all.concat(tracks);
     }
-    if (SPOTIFY_PROXY_URL) {
+    state.easyPool = [];
+    state.easyArtistPools = [];
+    state.easyGuaranteeQueue = [];
+    if (state.difficulty === 'easy') {
+      const perArtistHits = [];
+      for (const g of perArtistRaw) {
+        const tracks = g.tracks;
+        const hitCountRaw = tracks.length > 100 ? 30 : Math.max(3, Math.min(tracks.length, Math.round(tracks.length * 0.3)));
+        if (SPOTIFY_PROXY_URL) {
+          setupStatus.textContent = 'Ranking ' + g.name + ' by Spotify streams...';
+          const candidate = tracks.length > 100 ? tracks.slice(0, 60) : tracks;
+          const enriched = await enrichTracksWithPopularity(candidate);
+          perArtistHits.push(enriched.slice(0, Math.min(hitCountRaw, enriched.length)).map(t => ({ ...t, tier: 'hit' })));
+        } else {
+          perArtistHits.push(tracks.slice(0, Math.min(hitCountRaw, tracks.length)).map(t => ({ ...t, tier: 'hit' })));
+        }
+      }
+      const minHit = Math.min(...perArtistHits.map(h => h.length));
+      const balanced = perArtistHits.map(h => h.slice(0, minHit));
+      const easyPool = balanced.flat().map(t => ({ ...t, tier: 'hit' }));
+      state.easyPool = easyPool;
+      state.easyArtistPools = balanced;
+      state.hitPool = easyPool;
+      state.nichePool = [];
+      state.allPool = all;
+    } else if (SPOTIFY_PROXY_URL) {
       setupStatus.textContent = 'Ranking by Spotify streams...';
       all = await enrichTracksWithPopularity(all);
       const byPop = [...all].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
       const hitCount = Math.max(3, Math.min(byPop.length, Math.round(byPop.length * 0.3)));
       allHits = byPop.slice(0, hitCount).map(t => ({ ...t, tier: 'hit' }));
       allNiche = byPop.slice(hitCount).map(t => ({ ...t, tier: 'niche' }));
+      state.hitPool = allHits;
+      state.nichePool = allNiche;
+      state.allPool = all;
+    } else {
+      state.hitPool = allHits;
+      state.nichePool = allNiche;
+      state.allPool = all;
     }
-    state.hitPool = allHits;
-    state.nichePool = allNiche;
-    state.allPool = all;
     state.easyBag = [];
     state.hardBag = [];
     state.hitBag = [];
@@ -497,9 +534,38 @@ startBtn.addEventListener('click', async () => {
     state.score = 0;
     state.results = [];
 
+    const trackKey = (t) => (t.title + '|' + t.artist).toLowerCase();
+    const sampleWithRefill = (pool, count, excludeKeys = new Set()) => {
+      const avail = pool.filter(t => !excludeKeys.has(trackKey(t)));
+      const out = [];
+      let cyc = shuffle(avail.length ? avail : pool);
+      while (out.length < count) {
+        if (!cyc.length) cyc = shuffle(avail.length ? avail : pool);
+        out.push(cyc.pop());
+      }
+      return out;
+    };
+
     if (state.gameMode === 'endless') {
+      if (state.difficulty === 'easy' && state.easyArtistPools.length > 1) {
+        const order = shuffle(state.easyArtistPools.map((_, i) => i));
+        state.easyGuaranteeQueue = order.map(i => {
+          const pool = state.easyArtistPools[i];
+          return pool[Math.floor(Math.random() * pool.length)];
+        });
+      }
       state.rounds = [pickOneRound()];
       document.getElementById('q-total').textContent = '\u221e';
+    } else if (state.difficulty === 'easy' && state.easyArtistPools.length > 1 && state.totalQuestions >= state.easyArtistPools.length) {
+      const order = shuffle(state.easyArtistPools.map((_, i) => i));
+      const guarantee = order.map(i => {
+        const pool = state.easyArtistPools[i];
+        return pool[Math.floor(Math.random() * pool.length)];
+      });
+      const used = new Set(guarantee.map(trackKey));
+      const rest = sampleWithRefill(state.easyPool, state.totalQuestions - guarantee.length, used);
+      state.rounds = shuffle([...guarantee, ...rest]);
+      document.getElementById('q-total').textContent = state.totalQuestions;
     } else {
       state.rounds = Array.from({ length: state.totalQuestions }, () => pickOneRound());
       document.getElementById('q-total').textContent = state.totalQuestions;
