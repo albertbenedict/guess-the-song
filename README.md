@@ -10,7 +10,7 @@ A song-guessing game: pick 1–5 artists, guess from the shortest clip you can (
 3. Opens at `http://localhost:5500` — or just use the Play link above.
 
 ## Features
-- **Modes:** Normal (3–30 Q, stepper) / Endless (∞ until fail, best run in `localStorage`)
+- **Modes:** Normal (3–30 Questions, stepper) / Endless (∞ until fail, best run in `localStorage`)
 - **Difficulty:** Easy (hits only) / Medium (65% hits) / Hard (all) — hit = top ~30% Spotify popularity if proxy set, else top ~20% iTunes relevance
 - **Staged reveals:** 0.1s / 0.5s / 2s / 5s / 10s → 500 / 400 / 300 / 200 / 100 pts. Wrong guess → auto-reveal longer clip. Cover art shown on reveal.
 - **UX:** 5 artists max (`+ Add` → `Maximum of 5 reached`), light/dark theme (portfolio vars), 640px centered, iOS 16px anti-zoom + `touch-action: manipulation` + hover only on mouse, keyboard arrows/Enter/Esc for suggestions + Space to replay.
