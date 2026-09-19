@@ -477,7 +477,6 @@ startBtn.addEventListener('click', async () => {
       allNiche = allNiche.concat(niche);
       all = all.concat(tracks);
     }
-    // If Spotify proxy set, enrich all tracks with popularity and resort pools by real streams
     if (SPOTIFY_PROXY_URL) {
       setupStatus.textContent = 'Ranking by Spotify streams...';
       all = await enrichTracksWithPopularity(all);
