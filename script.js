@@ -1035,8 +1035,17 @@ navHomeLink.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.code !== 'Space' || e.repeat) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Enter' && !e.repeat) {
+    const resultsScreen = document.getElementById('results-screen');
+    if (resultsScreen.classList.contains('active') && exitModal.classList.contains('hidden')) {
+      if (document.activeElement && document.activeElement.tagName === 'BUTTON') return;
+      e.preventDefault();
+      document.getElementById('play-again-btn').click();
+      return;
+    }
+  }
+  if (e.code !== 'Space' || e.repeat) return;
   const active = document.activeElement;
   const isTyping = active === guessInput || active?.classList?.contains('artist-input');
   if (isTyping) return;
