@@ -402,9 +402,11 @@ async function fetchSpotifyPopularity(artist, title) {
   }
 }
 
-async function enrichTracksWithPopularity(tracks) {
+async function enrichTracksWithPopularity(tracks, onProgress) {
   if (!SPOTIFY_PROXY_URL) return tracks;
   const out = [];
+  const total = tracks.length;
+  let done = 0;
   for (let i = 0; i < tracks.length; i += 5) {
     const batch = tracks.slice(i, i + 5);
     const enriched = await Promise.all(batch.map(async t => {
@@ -412,6 +414,8 @@ async function enrichTracksWithPopularity(tracks) {
       return { ...t, popularity: pop };
     }));
     out.push(...enriched);
+    done += batch.length;
+    try { if (onProgress) onProgress(done, total); } catch (e) {}
   }
   return out.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 }
@@ -490,13 +494,18 @@ startBtn.addEventListener('click', async () => {
     state.easyGuaranteeQueue = [];
     if (state.difficulty === 'easy') {
       const perArtistHits = [];
+      const grandTotal = perArtistRaw.reduce((sum, g) => sum + (g.tracks.length > 100 ? Math.min(60, g.tracks.length) : g.tracks.length), 0);
+      let grandDone = 0;
       for (const g of perArtistRaw) {
         const tracks = g.tracks;
         const hitCountRaw = tracks.length > 100 ? 30 : Math.max(3, Math.min(tracks.length, Math.round(tracks.length * 0.3)));
         if (SPOTIFY_PROXY_URL) {
-          setupStatus.textContent = 'Ranking ' + g.name + ' by Spotify streams...';
+          setupStatus.textContent = 'Ranking ' + g.name + ' by Spotify streams... ' + grandDone + '/' + grandTotal;
           const candidate = tracks.length > 100 ? tracks.slice(0, 60) : tracks;
-          const enriched = await enrichTracksWithPopularity(candidate);
+          const enriched = await enrichTracksWithPopularity(candidate, (d) => {
+            setupStatus.textContent = 'Ranking ' + g.name + ' by Spotify streams... ' + (grandDone + d) + '/' + grandTotal;
+          });
+          grandDone += candidate.length;
           perArtistHits.push(enriched.slice(0, Math.min(hitCountRaw, enriched.length)).map(t => ({ ...t, tier: 'hit' })));
         } else {
           perArtistHits.push(tracks.slice(0, Math.min(hitCountRaw, tracks.length)).map(t => ({ ...t, tier: 'hit' })));
@@ -511,8 +520,10 @@ startBtn.addEventListener('click', async () => {
       state.nichePool = [];
       state.allPool = all;
     } else if (SPOTIFY_PROXY_URL) {
-      setupStatus.textContent = 'Ranking by Spotify streams...';
-      all = await enrichTracksWithPopularity(all);
+      setupStatus.textContent = 'Ranking by Spotify streams... 0/' + all.length;
+      all = await enrichTracksWithPopularity(all, (d, t) => {
+        setupStatus.textContent = 'Ranking by Spotify streams... ' + d + '/' + t;
+      });
       const byPop = [...all].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
       const hitCount = Math.max(3, Math.min(byPop.length, Math.round(byPop.length * 0.3)));
       allHits = byPop.slice(0, hitCount).map(t => ({ ...t, tier: 'hit' }));
@@ -748,6 +759,7 @@ function loadRound() {
   guessInput.value = '';
   guessInput.disabled = false;
   hideSongSuggestions();
+  try { guessInput.focus({ preventScroll: true }); } catch (e) { try { guessInput.focus(); } catch (e2) {} }
   document.getElementById('q-current').textContent = state.currentIndex + 1;
   renderStages();
 
