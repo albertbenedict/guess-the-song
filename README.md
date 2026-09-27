@@ -13,7 +13,7 @@ A song-guessing game: pick 1–5 artists, guess from the shortest clip you can (
 - **Modes:** Normal (3–30 Q) / Endless (∞ until fail, best run saved)
 - **Difficulty:** Easy (balanced hits, every artist shows up) / Medium (mix) / Hard (all songs)
 - **Clips:** 0.1s / 0.5s / 2s / 5s / 10s → 500 / 400 / 300 / 200 / 100 pts. Wrong guess reveals a longer clip.
-- **Extras:** 1–5 artists, light/dark theme, keyboard shortcuts (arrows + Enter + Space to replay).
+- **Extras:** 1–5 artists, light/dark theme, keyboard shortcuts (arrows + Enter + Space to replay). Your setup + volume are remembered.
 
 ## How to play
 1. Type an artist → pick from the dropdown.

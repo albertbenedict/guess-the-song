@@ -58,15 +58,18 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     state.gameMode = btn.dataset.mode;
     questionCountField.style.display = state.gameMode === 'endless' ? 'none' : '';
     document.getElementById('mode-desc').textContent = modeDesc[btn.dataset.mode];
+    saveSetup();
   });
 });
 
 const questionCountInput = document.getElementById('question-count');
 document.getElementById('qty-minus').addEventListener('click', () => {
   questionCountInput.value = Math.max(3, (parseInt(questionCountInput.value, 10) || 10) - 1);
+  saveSetup();
 });
 document.getElementById('qty-plus').addEventListener('click', () => {
   questionCountInput.value = Math.min(30, (parseInt(questionCountInput.value, 10) || 10) + 1);
+  saveSetup();
 });
 
 async function searchArtists(query) {
@@ -134,9 +137,11 @@ function setupArtistAutocomplete(row) {
     updateAvatar();
     list.hidden = true;
     artistSuggestionIndex = -1;
+    saveSetup();
     fetchYouTubePhoto(r.artistName).then(photoUrl => {
       if (photoUrl && input.value === r.artistName) {
         input.dataset.artworkUrl = photoUrl;
+        saveSetup();
         updateAvatar();
       }
     });
@@ -196,6 +201,7 @@ function setupArtistAutocomplete(row) {
     input.dataset.artistId = '';
     input.dataset.artworkUrl = '';
     updateAvatar();
+    saveSetup();
     clearTimeout(debounceTimer);
     const q = input.value.trim();
     if (q.length < 2) {
@@ -297,6 +303,7 @@ function removeOrClearRow(row) {
   if (artistList.children.length > 1) {
     row.remove();
     updateAddArtistBtn();
+    saveSetup();
     return;
   }
 
@@ -309,11 +316,10 @@ function removeOrClearRow(row) {
   combo.classList.remove('has-avatar');
   avatar.removeAttribute('src');
   input.focus();
+  saveSetup();
 }
 
-addArtistRow();
-updateAddArtistBtn();
-addArtistBtn.addEventListener('click', () => addArtistRow());
+addArtistBtn.addEventListener('click', () => { addArtistRow(); saveSetup(); });
 
 const diffDesc = {
   easy: 'Most popular songs or hits',
@@ -326,8 +332,76 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.classList.add('active');
     state.difficulty = btn.dataset.diff;
     document.getElementById('difficulty-desc').textContent = diffDesc[btn.dataset.diff];
+    saveSetup();
   });
 });
+
+function fillArtistRow(row, a) {
+  const input = row.querySelector('.artist-input');
+  const combo = row.querySelector('.artist-combo');
+  const avatar = row.querySelector('.artist-avatar');
+  input.value = a.name || '';
+  input.dataset.artistId = a.id || '';
+  input.dataset.artworkUrl = a.artworkUrl || '';
+  if (a.artworkUrl) {
+    avatar.src = a.artworkUrl;
+    combo.classList.add('has-avatar');
+  } else {
+    combo.classList.remove('has-avatar');
+    avatar.removeAttribute('src');
+  }
+}
+
+function saveSetup() {
+  try {
+    const artists = [...artistList.querySelectorAll('.artist-row')].map(row => {
+      const input = row.querySelector('.artist-input');
+      return { name: input.value.trim(), id: input.dataset.artistId || '', artworkUrl: input.dataset.artworkUrl || '' };
+    });
+    localStorage.setItem('gts-setup', JSON.stringify({
+      artists,
+      gameMode: state.gameMode,
+      difficulty: state.difficulty,
+      totalQuestions: Math.max(3, Math.min(30, parseInt(questionCountInput.value, 10) || 10))
+    }));
+  } catch (e) {}
+}
+
+function restoreSetup() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem('gts-setup') || 'null'); } catch (e) {}
+  if (!s) return false;
+  if (s.gameMode === 'endless' || s.gameMode === 'normal') {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === s.gameMode));
+    state.gameMode = s.gameMode;
+    questionCountField.style.display = s.gameMode === 'endless' ? 'none' : '';
+    document.getElementById('mode-desc').textContent = modeDesc[s.gameMode];
+  }
+  if (diffDesc[s.difficulty]) {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === s.difficulty));
+    state.difficulty = s.difficulty;
+    document.getElementById('difficulty-desc').textContent = diffDesc[s.difficulty];
+  }
+  if (s.totalQuestions) questionCountInput.value = Math.max(3, Math.min(30, s.totalQuestions));
+  const saved = (s.artists || []).filter(a => a && a.name).slice(0, MAX_ARTISTS);
+  if (saved.length) {
+    artistList.innerHTML = '';
+    saved.forEach(a => { addArtistRow(); fillArtistRow(artistList.lastElementChild, a); });
+    updateAddArtistBtn();
+    return true;
+  }
+  return false;
+}
+
+try {
+  const v = parseFloat(localStorage.getItem('gts-volume'));
+  if (isFinite(v) && v >= 0 && v <= 1) document.getElementById('volume').value = String(v);
+} catch (e) {}
+
+if (!restoreSetup()) {
+  addArtistRow();
+  updateAddArtistBtn();
+}
 
 function normalize(str) {
   return str
@@ -470,6 +544,7 @@ startBtn.addEventListener('click', async () => {
 
   const n = parseInt(questionCountInput.value, 10) || 10;
   state.totalQuestions = Math.max(3, Math.min(30, n));
+  saveSetup();
 
   startBtn.disabled = true;
   setupStatus.classList.add('show');
@@ -736,6 +811,7 @@ function getAudioCtx() {
 document.getElementById('volume').addEventListener('input', (e) => {
   if (gainNode) gainNode.gain.value = parseFloat(e.target.value);
   player.volume = parseFloat(e.target.value);
+  try { localStorage.setItem('gts-volume', e.target.value); } catch (err) {}
 });
 
 async function loadAudioBuffer(url) {
