@@ -35,6 +35,7 @@ const addArtistBtn = document.getElementById('add-artist-btn');
 const startBtn = document.getElementById('start-btn');
 const setupError = document.getElementById('setup-error');
 const setupStatus = document.getElementById('setup-status');
+const retryBtn = document.getElementById('retry-btn');
 
 const themeSwitch = document.getElementById('theme-switch');
 if (themeSwitch) {
@@ -527,9 +528,15 @@ function pickOneRound() {
   return state.hardBag.pop();
 }
 
+retryBtn.addEventListener('click', () => {
+  retryBtn.style.display = 'none';
+  startBtn.click();
+});
+
 startBtn.addEventListener('click', async () => {
   try { getAudioCtx(); } catch (e) { }
   setupError.classList.remove('show');
+  retryBtn.style.display = 'none';
   const rows = [...artistList.querySelectorAll('.artist-row')];
   const artistData = rows.map(row => {
     const input = row.querySelector('.artist-input');
@@ -665,6 +672,7 @@ startBtn.addEventListener('click', async () => {
   } catch (err) {
     setupError.textContent = err.message || 'Something went wrong fetching songs.';
     setupError.classList.add('show');
+    retryBtn.style.display = 'inline-block';
   } finally {
     startBtn.disabled = false;
     setupStatus.classList.remove('show');

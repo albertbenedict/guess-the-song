@@ -257,6 +257,7 @@ input[type=text]:focus, input[type=number]:focus { outline: none; border-color: 
 .back-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--border-color); }
 
 .error-text { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; font-weight: 600; }
+#retry-btn { margin-top: 10px; }
 .status-text { color: var(--text-dim); font-size: 13px; margin-top: 14px; display: none; font-weight: 500; }
 .status-text.show, .error-text.show { display: block; }
 
