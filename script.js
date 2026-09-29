@@ -501,7 +501,43 @@ function refillBagIfEmpty(bagKey, source) {
   }
 }
 
-function pickOneRound() {
+function artistKey(t) {
+  return ((t && (t.sourceArtist || t.artist)) || '').toLowerCase();
+}
+
+// Reorder rounds so the same artist never appears 3x in a row (2 max).
+// Single-artist pools are returned untouched. Picks the most frequent
+// remaining artist at each step (excluding the banned one when the last
+// two match) so we never paint ourselves into a corner early.
+function avoidThreepeat(rounds) {
+  const distinct = new Set(rounds.map(artistKey));
+  if (distinct.size < 2) return rounds;
+  const out = [];
+  const pool = [...rounds];
+  while (pool.length) {
+    const n = out.length;
+    const banned = n >= 2 && artistKey(out[n - 1]) === artistKey(out[n - 2]) ? artistKey(out[n - 1]) : null;
+    const counts = new Map();
+    pool.forEach((t, i) => {
+      const k = artistKey(t);
+      if (k === banned) return;
+      if (!counts.has(k)) counts.set(k, []);
+      counts.get(k).push(i);
+    });
+    let idx = -1;
+    if (counts.size) {
+      let best = null;
+      for (const arr of counts.values()) if (!best || arr.length > best.length) best = arr;
+      idx = best[Math.floor(Math.random() * best.length)];
+    } else {
+      idx = Math.floor(Math.random() * pool.length); // unavoidable: only banned artist left
+    }
+    out.push(pool.splice(idx, 1)[0]);
+  }
+  return out;
+}
+
+function drawOnce() {
   const { difficulty, hitPool, nichePool, allPool } = state;
   if (difficulty === 'easy') {
     if (state.easyGuaranteeQueue && state.easyGuaranteeQueue.length) {
@@ -526,6 +562,29 @@ function pickOneRound() {
   }
   refillBagIfEmpty('hardBag', allPool);
   return state.hardBag.pop();
+}
+
+function pickOneRound() {
+  // Endless mode builds rounds one at a time: if the last two rounds are the
+  // same artist, redraw (up to 6 tries) so we never get a threepeat.
+  // Normal mode prebuilds with state.rounds empty, so this is a no-op there
+  // (avoidThreepeat reorders the full list instead).
+  const r = state.rounds;
+  let blocked = null;
+  if (r && r.length >= 2) {
+    const a = artistKey(r[r.length - 1]), b = artistKey(r[r.length - 2]);
+    if (a && a === b) blocked = a;
+  }
+  if (!blocked) return drawOnce();
+  let fallback = null;
+  for (let i = 0; i < 6; i++) {
+    const c = drawOnce();
+    if (!c) return fallback;
+    if (!fallback) fallback = c;
+    if (artistKey(c) !== blocked) return c;
+    fallback = c;
+  }
+  return fallback;
 }
 
 retryBtn.addEventListener('click', () => {
@@ -626,6 +685,7 @@ startBtn.addEventListener('click', async () => {
     state.currentIndex = 0;
     state.score = 0;
     state.results = [];
+    state.rounds = [];
 
     const trackKey = (t) => (t.title + '|' + t.artist).toLowerCase();
     const sampleWithRefill = (pool, count, excludeKeys = new Set()) => {
@@ -657,10 +717,10 @@ startBtn.addEventListener('click', async () => {
       });
       const used = new Set(guarantee.map(trackKey));
       const rest = sampleWithRefill(state.easyPool, state.totalQuestions - guarantee.length, used);
-      state.rounds = shuffle([...guarantee, ...rest]);
+      state.rounds = avoidThreepeat(shuffle([...guarantee, ...rest]));
       document.getElementById('q-total').textContent = state.totalQuestions;
     } else {
-      state.rounds = Array.from({ length: state.totalQuestions }, () => pickOneRound());
+      state.rounds = avoidThreepeat(Array.from({ length: state.totalQuestions }, () => pickOneRound()));
       document.getElementById('q-total').textContent = state.totalQuestions;
     }
     document.getElementById('q-score').textContent = '0';
